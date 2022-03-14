@@ -1,1 +1,9 @@
-yes
+works = False
+
+def project ():
+  if works == True:
+    print ("Finished")
+   else:
+    print ("Needs Work.")
+
+project ()
