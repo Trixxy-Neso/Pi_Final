@@ -108,7 +108,7 @@ def main():
                 if event.key == K_d:
                     player1.moveright()
                 
-            elif event.type == KEYUP:
+            elif event.type == KEYUP and (not event.type == KEYDOWN):
                 #if event.key == K_a or event.key == K_w or event.key == K_s or event.key == K_d:
                 #    player1.movepos = [0,0]
                 #    player1.state = "still"
