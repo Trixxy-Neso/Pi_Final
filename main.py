@@ -1,3 +1,4 @@
+from smtpd import DebuggingServer
 import sys
 import random
 import math
@@ -28,6 +29,8 @@ class Player(pygame.sprite.Sprite):
         self.attack_frame = 0
         self.health = 5
         self.cooldown = False
+        self.d_cooldown = False
+        self.dashAbility = True
         
 
     def reinit(self):
@@ -43,36 +46,44 @@ class Player(pygame.sprite.Sprite):
         pygame.event.pump()
 
     def moveup(self):
-        self.movepos[1] = -5
+        self.movepos[1] += -5
         self.state = "moveup"
 
     def movedown(self):
-        self.movepos[1] = 5
+        self.movepos[1] += 5
         self.state = "movedown"
 
     def moveright(self):
-        self.movepos[0] = 5
+        self.movepos[0] += 5
         self.state = "moveright"
 
     def moveleft(self):
-        self.movepos[0] = -5
+        self.movepos[0] += -5
         self.state = "moveleft"
 
-    def stopmovevert(self):
-        self.movepos[1] = 0
+    def stopmoveup(self):
+        self.movepos[1] += 5
         self.state = "still"
 
-    def stopmovehoriz(self):
-        self.movepos[0] = 0
+    def stopmovedown(self):
+        self.movepos[1] += -5
+        self.state = "still"
+
+    def stopmoveleft(self):
+        self.movepos[0] += 5
+        self.state = "still"
+
+    def stopmoveright(self):
+        self.movepos[0] += -5
         self.state = "still"
 
     def attack(self, direction):
-        print(self.attack_frame)
+        #print(self.attack_frame)
 
         # Check direction
         if direction == "RIGHT":
             self.image = pygame.image.load("attack_R.gif")
-            print("set sword")
+            #print("set sword")
         
         
         
@@ -81,7 +92,7 @@ class Player(pygame.sprite.Sprite):
             self.attack_frame = 0
             self.image = pygame.image.load("breadc.gif")
             self.attacking = ""
-            print("stopping attack")
+            #print("stopping attack")
 
         
             
@@ -100,6 +111,62 @@ class Player(pygame.sprite.Sprite):
                 self.kill()
                 health.dead()
                 pygame.display.update()
+
+    def dash(self, direction):
+        print("start dash")
+        if self.d_cooldown == False:
+            self.d_cooldown = True
+            pygame.time.set_timer(dash_cooldown, 5000)
+
+            if direction == "LEFT":
+                newpos = self.rect.move(-70,0)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+                self.image = pygame.image.load("dashLc.gif")
+
+            if direction == "RIGHT":
+                newpos = self.rect.move(70,0)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
+            if direction == "UP":
+                newpos = self.rect.move(0,-70)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
+            if direction == "DOWN":
+                newpos = self.rect.move(0,70)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
+            if direction == "LEFT_UP":
+                newpos = self.rect.move(-50,-50)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
+            if direction == "RIGHT_UP":
+                newpos = self.rect.move(50,-50)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
+            if direction == "LEFT_DOWN":
+                newpos = self.rect.move(-50,50)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
+            if direction == "RIGHT_DOWN":
+                newpos = self.rect.move(50,50)
+                if self.area.contains(newpos):
+                    self.rect = newpos
+                pygame.event.pump()
+
 
     
 class Sword(pygame.sprite.Sprite):
@@ -161,6 +228,10 @@ def main():
     # Others 
     global hit_cooldown
     hit_cooldown = pygame.USEREVENT + 1
+    global dash_cooldown
+    dash_cooldown = pygame.USEREVENT + 2
+    global testing
+    testing = True
 
     # Event loop
     while 1:
@@ -170,44 +241,98 @@ def main():
         if player1.attacking == "RIGHT":
             player1.attack("RIGHT")
 
+        # Setup key positions 
+        moveUp = False
+        moveDown = False
+        moveRight = False
+        moveLeft = False
+        dashKey = False
 
         for event in pygame.event.get():
             if event.type == hit_cooldown:
                 player1.cooldown = False
+            if event.type == dash_cooldown:
+                player1.d_cooldown = False
             if event.type == QUIT:
                 return
+
+            # Get key positions to be used later
             elif event.type == KEYDOWN:
+                # Base Movement keys
                 if event.key == K_w:
-                    player1.moveup()
+                    #player1.moveup()
+                    moveUp = True
                 if event.key == K_s:
-                    player1.movedown()
+                    #player1.movedown()
+                    moveDown = True
                 if event.key == K_a:
-                    player1.moveleft()
+                    #player1.moveleft()
+                    moveLeft = True
                 if event.key == K_d:
-                    player1.moveright()
+                    #player1.moveright()
+                    moveRight = True
                 if event.key == K_RIGHT:
                     print('attack right keydown')
                     if player1.attacking == "":
                         print('triggering attack func')
                         player1.attack("RIGHT")
                         player1.attacking = "RIGHT"
-                
+
+                # Abilities
                 if event.key == K_SPACE:
+                    dashKey = True
+                    print("Dash Key")
+                
+                # Testing
+                if event.key == K_k and testing:
                     player1.player_hit()
+
                 
             elif event.type == KEYUP:
                 #if event.key == K_a or event.key == K_w or event.key == K_s or event.key == K_d:
                 #    player1.movepos = [0,0]
                 #    player1.state = "still"
 
-                if event.key == K_a or event.key == K_d:
-                    player1.stopmovehoriz()
+                if event.key == K_a: 
+                    player1.stopmoveleft()
+                if event.key == K_d:
+                    player1.stopmoveright()
 
-                if event.key == K_w or event.key == K_s:
-                    player1.stopmovevert()
+                if event.key == K_w: 
+                    player1.stopmoveup()
+                if event.key == K_s:
+                    player1.stopmovedown()
 
-                    
-                
+        ## Act on keypositions retrieved ##
+
+        # Dash
+        if dashKey:
+            if player1.movepos[0] > 0 and player1.movepos[1] < 0:
+                player1.dash("RIGHT_UP")
+            if player1.movepos[0] < 0 and player1.movepos[1] < 0:
+                player1.dash("LEFT_UP")
+            if player1.movepos[0] > 0 and player1.movepos[1] > 0:
+                player1.dash("RIGHT_DOWN")
+            if player1.movepos[0] < 0 and player1.movepos[1] > 0:
+                player1.dash("LEFT_DOWN")
+            if player1.movepos[0] > 0:
+                player1.dash("RIGHT")
+            if player1.movepos[0] < 0:
+                player1.dash("LEFT")
+            if player1.movepos[1] > 0:
+                player1.dash("DOWN")
+            if player1.movepos[1] < 0:
+                player1.dash("UP")
+
+        if moveUp:
+            player1.moveup()
+        if moveDown:
+            player1.movedown()
+        if moveRight:
+            player1.moveright()
+        if moveLeft:
+            player1.moveleft()
+
 
         
         screen.blit(background, player1.rect)
