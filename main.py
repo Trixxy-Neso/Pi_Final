@@ -117,13 +117,14 @@ class Player(pygame.sprite.Sprite):
         if self.d_cooldown == False:
             self.d_cooldown = True
             pygame.time.set_timer(dash_cooldown, 5000)
+            self.image = pygame.image.load("dashc.gif")
 
             if direction == "LEFT":
                 newpos = self.rect.move(-70,0)
                 if self.area.contains(newpos):
                     self.rect = newpos
                 pygame.event.pump()
-                self.image = pygame.image.load("dashLc.gif")
+                
 
             if direction == "RIGHT":
                 newpos = self.rect.move(70,0)
@@ -253,6 +254,7 @@ def main():
                 player1.cooldown = False
             if event.type == dash_cooldown:
                 player1.d_cooldown = False
+                player1.image = pygame.image.load("breadc.gif")
             if event.type == QUIT:
                 return
 
