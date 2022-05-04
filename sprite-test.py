@@ -46,6 +46,10 @@ class Player(pygame.sprite.Sprite):
             self.rect = newpos
         pygame.event.pump()
 
+        hit_player = pygame.sprite.spritecollide(self, Enemygroup, False)
+        if hit_player:
+            self.player_hit()
+
     def moveup(self):
         self.movepos[1] += -5
         self.state = "moveup"
@@ -78,27 +82,6 @@ class Player(pygame.sprite.Sprite):
         self.movepos[0] += -5
         self.state = "still"
 
-    def attack(self, direction):
-        #print(self.attack_frame)
-
-        # Check direction
-        if direction == "RIGHT":
-            self.image = pygame.image.load("attack_R.gif")
-            #print("set sword")
-        
-        
-        
-        # if attack frame had reached the end, return
-        if self.attack_frame > 10:
-            self.attack_frame = 0
-            self.image = pygame.image.load("breadc.png")
-            self.attacking = ""
-            #print("stopping attack")
-
-        
-            
-
-        self.attack_frame += 1
 
     def player_hit(self):
         if self.cooldown == False:      
@@ -111,7 +94,9 @@ class Player(pygame.sprite.Sprite):
             if self.health <= 0:
                 self.kill()
                 health.dead()
+                effect.player_death()
                 pygame.display.update()
+                
 
     def dash(self, direction):
         print("start dash")
@@ -241,6 +226,9 @@ class Effect(pygame.sprite.Sprite):
 
     def dash(self):
         self.image = pygame.image.load("dash.png")
+
+    def player_death(self):
+        self.kill()
         
     def update(self, player): # has the enemy move with/to player
         pcx = player.rect.x #- (player.rect.width / 2)
@@ -248,6 +236,7 @@ class Effect(pygame.sprite.Sprite):
 
         self.rect.x = pcx - 13
         self.rect.y = pcy - 5
+
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -272,13 +261,7 @@ class Enemy(pygame.sprite.Sprite):
         if hit_sword:
             self.kill()
             print("OH GOD IM DEAD")
-
-        hit_player = pygame.sprite.spritecollide(self, Swordgroup, False)
-        if hit_player:
-            pass
-        
     
-
 
     
 class HealthBar(pygame.sprite.Sprite):
@@ -320,14 +303,14 @@ def main():
     global Playergroup
     Playergroup = pygame.sprite.Group()
     Playergroup.add(player1)
- 
 
-    
    
     # Initialize enemies
     global enemy
     enemy = Enemy()
-    
+    global Enemygroup
+    Enemygroup = pygame.sprite.Group()
+    Enemygroup.add(enemy)
 
     # Initialise sprites
     playersprites = pygame.sprite.RenderPlain((player1))
@@ -397,16 +380,16 @@ def main():
                     #player1.moveright()
                     moveRight = True
                 if event.key == K_RIGHT:
-                    print('attack RIGHT keydown')
+                    #print('attack RIGHT keydown')
                     sword.attack("RIGHT")
                 if event.key == K_LEFT:
-                    print('attack LEFT keydown')
+                    #print('attack LEFT keydown')
                     sword.attack("LEFT")
                 if event.key == K_UP:
-                    print('attack UP keydown')
+                    #print('attack UP keydown')
                     sword.attack("UP")
                 if event.key == K_DOWN:
-                    print('attack DOWN keydown')
+                    #print('attack DOWN keydown')
                     sword.attack("DOWN")
                 
                     
