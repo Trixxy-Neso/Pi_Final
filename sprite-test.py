@@ -1,7 +1,7 @@
 from bdb import effective
 from smtpd import DebuggingServer
 import sys
-import random
+from random import randint
 import math
 import os
 import getopt
@@ -21,6 +21,8 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("breadc.png")
         self.rect = self.image.get_rect()
+        self.rect.x = 300
+        self.rect.y = 220
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.speed = 10
@@ -38,7 +40,7 @@ class Player(pygame.sprite.Sprite):
         self.state = "still"
         self.movepos = [0,0]
         
-        self.rect.midleft = self.area.midleft
+        #self.rect.midleft = self.area.midleft
 
     def update(self):
         newpos = self.rect.move(self.movepos)
@@ -167,13 +169,10 @@ class Sword(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = -100
         self.rect.y = -100
-        screen = pygame.display.get_surface()
-        self.area = screen.get_rect()
         self.cooldown = False
         self.point = ""
 
     def attack(self, direction):
-        print("command recieved")
         if self.cooldown == False:
             self.cooldown = True
             pygame.time.set_timer(attack_cooldown, 500)
@@ -247,6 +246,13 @@ class Enemy(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("enen.gif")
         self.rect = self.image.get_rect()
+        #random spawn locations
+        self.rect.x = randint(10, 600)
+        self.rect.y = randint(10, 460)
+        if 230 < self.rect.x < 340:
+            self.rect.x = 30
+        if 180 < self.rect.y < 250:
+            self.rect.y = 30
         self.speed = 2
         
     def update(self, player): # has the enemy move with/to player
@@ -260,6 +266,7 @@ class Enemy(pygame.sprite.Sprite):
             self.rect.x += dx * self.speed
             self.rect.y += dy * self.speed
 
+        # this handeles sword colision dectection, player colision is handeled in the player class
         hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
         if hit_sword:
             self.kill()
@@ -268,15 +275,35 @@ class Enemy(pygame.sprite.Sprite):
 
     
 class HealthBar(pygame.sprite.Sprite):
-      def __init__(self):
-            super().__init__()
-            self.image = pygame.image.load("5health.png")
-            self.rect = self.image.get_rect()
- 
-      # Game over is handeled in the health sprite because its easier
-      def dead(self):
-          self.image = pygame.image.load("gameover.png")
-          self.rect =  (220,150)   # self.image.get_rect()
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("5health.png")
+        self.rect = self.image.get_rect()
+
+    # Game over is handeled in the health sprite because its easier, turns the health bar into the game over because the health bar is gone wanyway
+    def dead(self):
+        self.image = pygame.image.load("gameover.png")
+        self.rect =  (220,150)   # self.image.get_rect()
+
+
+
+class NoticeBoard(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.image.load("nextwave.png")
+        self.rect = self.image.get_rect()
+        self.hide()
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
+
+    def show(self):
+        self.rect.center = self.area.center #- (self.rect.width/2)
+        self.rect.y = 60
+
+    def hide(self):
+        self.rect.x = -100
+        self.rect.y = -300
+
 
 
 
@@ -284,42 +311,57 @@ def main():
     # Initialise screen
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
-    pygame.display.set_caption('EEE')
+    pygame.display.set_caption('Some bread pun')
+
 
     # Fill background
     background = pygame.Surface(screen.get_size())
     background = background.convert()
     background.fill((0, 128, 0))
 
+
     # Initialise players
-    global player1
-    global health
     global effect
-    global sword
     effect = Effect()
+
+    global player1
     player1 = Player()
-    health = HealthBar()
+
+    global sword
     sword = Sword()
+
     global Swordgroup
     Swordgroup = pygame.sprite.Group()
     Swordgroup.add(sword)
+
     global Playergroup
     Playergroup = pygame.sprite.Group()
     Playergroup.add(player1)
 
-   
+
+    # Initialise backgrounds
+    global health
+    health = HealthBar()
+
+    global notice
+    notice = NoticeBoard()
+
+
     # Initialize enemies
-    global enemy
-    enemy = Enemy()
     global Enemygroup
     Enemygroup = pygame.sprite.Group()
-    Enemygroup.add(enemy)
+    def addEnemies(stage):
+        for i in range(0, stage):
+            i = Enemy()
+            Enemygroup.add(i)           
+            enemysprites.add(i)
+    
 
     # Initialise sprites
     playersprites = pygame.sprite.RenderPlain((player1))
     playereffectsprites = pygame.sprite.RenderPlain((effect))
-    enemysprites = pygame.sprite.RenderPlain((enemy))
-    healthsprites = pygame.sprite.RenderPlain((health))
+    enemysprites = pygame.sprite.RenderPlain()   
+    backgroundsprites = pygame.sprite.RenderPlain((health, notice))
     swordsprites = pygame.sprite.RenderPlain((sword))
     
 
@@ -327,8 +369,10 @@ def main():
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
+
     # Initialise clock
     clock = pygame.time.Clock()
+
 
     # Others 
     global hit_cooldown
@@ -341,15 +385,23 @@ def main():
     game_over = False
     global testing
     testing = True
+    wave_fin = True
+    wave_num = 1
+    show_notice = False
+
 
     # Event loop
     while 1:
         # Make sure game doesn't run at more than 60 frames per second
         clock.tick(60)
-
-        if player1.attacking == "RIGHT":
-            player1.attack("RIGHT")
         
+        if wave_fin == True and show_notice == False:
+            notice.show()
+            show_notice = True
+
+        if len(enemysprites) == 0:
+            wave_fin = True
+            #notice.hide()
 
         # Setup key positions 
         moveUp = False
@@ -395,9 +447,7 @@ def main():
                     sword.attack("UP")
                 if event.key == K_DOWN:
                     #print('attack DOWN keydown')
-                    sword.attack("DOWN")
-                
-                    
+                    sword.attack("DOWN") 
 
                 # Abilities
                 if event.key == K_SPACE:
@@ -410,6 +460,15 @@ def main():
                 if event.key == K_l and testing:
                     player1.health = 1
                     player1.player_hit()
+
+                # Waves
+                if event.key == K_RETURN:
+                    show_notice = False
+                    wave_fin = False
+                    addEnemies(wave_num)
+                    wave_num += 1
+                    notice.hide()
+                    print("starting next wave")
 
                 
             elif event.type == KEYUP and game_over == False:
@@ -465,11 +524,11 @@ def main():
         if moveLeft:
             player1.moveleft()
 
-
-        screen.blit(background, enemy.rect)
+        for enemy in enemysprites:
+            screen.blit(background, enemy.rect)
         screen.blit(background, player1.rect)
-        
         screen.blit(background, health.rect)
+        screen.blit(background, sword.rect)
         
         enemysprites.update(player1)
         enemysprites.draw(screen)
@@ -480,8 +539,8 @@ def main():
         playersprites.update()
         playersprites.draw(screen)
 
-        healthsprites.update()
-        healthsprites.draw(screen)
+        backgroundsprites.update()
+        backgroundsprites.draw(screen)
 
         swordsprites.update(player1)
         swordsprites.draw(screen)
