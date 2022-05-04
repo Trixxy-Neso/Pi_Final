@@ -1,6 +1,10 @@
 from bdb import effective
+from smtpd import DebuggingServer
+import sys
 from random import randint
 import math
+import os
+import getopt
 import pygame
 from socket import *
 from pygame.locals import *
@@ -86,8 +90,7 @@ class Player(pygame.sprite.Sprite):
         if self.cooldown == False:      
             self.cooldown = True # Enable the cooldown
             pygame.time.set_timer(hit_cooldown, 1000) # Resets cooldown in 1 second
-            self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD) # Red tint
-
+ 
             self.health = self.health - 1
             health.image = health_ani[self.health]
              
@@ -106,11 +109,7 @@ class Player(pygame.sprite.Sprite):
         if self.d_cooldown == False:
             self.d_cooldown = True
             pygame.time.set_timer(dash_cooldown, 5000)
-
-            self.cooldown = True # Hit cooldown
-            pygame.time.set_timer(hit_cooldown, 1000) 
             
-            self.image.fill((60, 0, 0, 100), special_flags=pygame.BLEND_SUB)
 
             if direction == "LEFT":
                 newpos = self.rect.move(-70,0)
@@ -254,22 +253,19 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.image.load("enen.gif")
         self.rect = self.image.get_rect()
         #random spawn locations
-        tryspawn = True
-        while tryspawn:
-            self.rect.x = randint(10, 800)
-            self.rect.y = randint(10, 450)
-            dx = (player1.rect.x + (player1.rect.width/2) ) - (self.rect.x + (self.rect.width/2))
-            dy = (player1.rect.y + (player1.rect.height/2)) - (self.rect.y + (self.rect.height/2))
-            dist = math.hypot(dx, dy)
-            if dist < 200:
-                tryspawn = True
-            else: 
-                tryspawn = False
+        self.rect.x = randint(10, 600)
+        self.rect.y = randint(10, 460)
+        if 230 < self.rect.x < 340:
+            self.rect.x = 30
+        if 180 < self.rect.y < 250:
+            self.rect.y = 30
         self.speed = 2
         
     def update(self, player): # has the enemy move with/to player
-        dx = (player.rect.x + (player.rect.width/2) ) - (self.rect.x + (self.rect.width/2))
-        dy = (player.rect.y + (player.rect.height/2)) - (self.rect.y + (self.rect.height/2))
+        dx = (player.rect.x - (player.rect.width/2) - 55) - (self.rect.x - (self.rect.width/2))
+        #dx = dx - ((player1.rect.width / 4) + (self.rect.width / 4))
+        dy = (player.rect.y - (player.rect.height/2)) - (self.rect.y - (self.rect.height/2))
+        #dy = dy - ((player1.rect.height / 4) + (self.rect.height / 4))
         dist = math.hypot(dx, dy)
         if dist > 40:
             dx, dy = dx / dist, dy / dist
@@ -314,6 +310,7 @@ class NoticeBoard(pygame.sprite.Sprite):
         self.rect.x = -100
         self.rect.y = -300
 
+
 class Backdrop(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -324,15 +321,14 @@ class Backdrop(pygame.sprite.Sprite):
 def main():
     # Initialise screen
     pygame.init()
-    screen = pygame.display.set_mode((800, 450))
+    screen = pygame.display.set_mode((640, 480))
     pygame.display.set_caption('Some bread pun')
 
 
     # Fill background
-    background = pygame.Surface(screen.get_size())
-    #background = pygame.image.load("background.png")
-    background = background.convert()
-    background.fill((0, 128, 0))
+    backgroundSurface = pygame.image.load("backgorund.png")#pygame.Surface(screen.get_size())
+    #backgroundSurface = backgroundSurface.convert()
+    #backgroundSurface.fill((0, 128, 0))
 
 
     # Initialise players
@@ -382,9 +378,11 @@ def main():
     backgroundsprites = pygame.sprite.RenderPlain((health, notice))
     swordsprites = pygame.sprite.RenderPlain((sword))
     theverybackgroundsprites = pygame.sprite.RenderPlain((bgimage))
+    
+    
 
     # Blit everything to the screen
-    screen.blit(background, (0, 0))
+    screen.blit(backgroundSurface, (0, 0))
     pygame.display.flip()
 
 
@@ -431,7 +429,6 @@ def main():
         for event in pygame.event.get():
             if event.type == hit_cooldown:
                 player1.cooldown = False
-                player1.image = pygame.image.load("breadc.png") # reset red tint
             if event.type == dash_cooldown:
                 player1.d_cooldown = False
                 effect.neutral()
@@ -483,7 +480,7 @@ def main():
                     player1.player_hit()
 
                 # Waves
-                if event.key == K_RETURN and wave_fin:
+                if event.key == K_RETURN:
                     show_notice = False
                     wave_fin = False
                     addEnemies(wave_num)
@@ -549,14 +546,14 @@ def main():
             player1.moveleft()
 
         # Render Stuffs 
-
-        for enemy in enemysprites:
-            screen.blit(background, enemy.rect)
-        screen.blit(background, player1.rect)
-        screen.blit(background, health.rect)
-        screen.blit(background, sword.rect)
-        screen.blit(background, bgimage.rect)
         
+        for enemy in enemysprites:
+            screen.blit(backgroundSurface, enemy.rect)
+        screen.blit(backgroundSurface, player1.rect)
+        screen.blit(backgroundSurface, health.rect)
+        screen.blit(backgroundSurface, sword.rect)
+        screen.blit(backgroundSurface, bgimage.rect)
+
         theverybackgroundsprites.update()
         theverybackgroundsprites.draw(screen)
 
