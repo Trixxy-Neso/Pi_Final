@@ -16,25 +16,6 @@ health_ani = [pygame.image.load("nohealthc.gif"), pygame.image.load("1healthc.gi
               pygame.image.load("2healthc.gif"), pygame.image.load("3healthc.gif"),
               pygame.image.load("4healthc.gif"), pygame.image.load("5healthc.gif")]
 
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("enen.gif")
-        self.rect = self.image.get_rect()
-        self.speed = 2
-        
-    def update(self, player): # has the enemy move with/to player
-        dx = player.rect.x - self.rect.x
-        dx = dx - ((player1.rect.width / 4) + (self.rect.width / 4))
-        dy = player.rect.y - self.rect.y
-        dy = dy - ((player1.rect.height / 4) + (self.rect.height / 4))
-        dist = math.hypot(dx, dy)
-        if dist > 5:
-            dx, dy = dx / dist, dy / dist
-            self.rect.x += dx * self.speed
-            self.rect.y += dy * self.speed
-        # still need to work out bugs and collision, once enemy is close enough to player he bugs out and jitters
-
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -194,11 +175,60 @@ class Sword(pygame.sprite.Sprite):
 
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("sword.gif")
+        self.image = pygame.image.load("swordL.png")
         self.rect = self.image.get_rect()
+        self.rect.x = -100
+        self.rect.y = -100
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
-        self.timer = 10
+        self.cooldown = False
+        self.point = ""
+
+    def attack(self, direction):
+        print("command recieved")
+        if self.cooldown == False:
+            self.cooldown = True
+            pygame.time.set_timer(attack_cooldown, 500)
+            self.point = direction 
+
+    def neutral(self):
+        self.point = ""
+        self.cooldown = False
+
+
+
+    def update(self, player): # has the enemy move with/to player
+
+        if self.point != "":
+            pcx = player.rect.x + (player.rect.width / 2)
+            pcy = player.rect.y + (player.rect.height / 2)
+            
+            if self.point == "RIGHT":
+                self.image = pygame.image.load("swordR.png")
+                self.rect.x = pcx + 20
+                self.rect.y = pcy - 10
+
+            if self.point == "LEFT":
+                self.image = pygame.image.load("swordL.png")
+                self.rect.x = pcx - 80
+                self.rect.y = pcy - 10
+
+            if self.point == "UP":
+                self.image = pygame.image.load("swordU.png")
+                self.rect.x = pcx - 15
+                self.rect.y = pcy - 80
+
+            if self.point == "DOWN":
+                self.image = pygame.image.load("swordD.png")
+                self.rect.x = pcx - 15
+                self.rect.y = pcy + 20
+
+        else:
+            self.image = pygame.image.load("swordL.png")
+            self.rect.x = -100
+            self.rect.y = -100
+
+    
 
 class Effect(pygame.sprite.Sprite):
     def __init__(self):
@@ -219,6 +249,35 @@ class Effect(pygame.sprite.Sprite):
         self.rect.x = pcx - 13
         self.rect.y = pcy - 5
 
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("enen.gif")
+        self.rect = self.image.get_rect()
+        self.speed = 2
+        
+    def update(self, player): # has the enemy move with/to player
+        dx = player.rect.x - self.rect.x
+        dx = dx - ((player1.rect.width / 4) + (self.rect.width / 4))
+        dy = player.rect.y - self.rect.y
+        dy = dy - ((player1.rect.height / 4) + (self.rect.height / 4))
+        dist = math.hypot(dx, dy)
+        if dist > 5:
+            dx, dy = dx / dist, dy / dist
+            self.rect.x += dx * self.speed
+            self.rect.y += dy * self.speed
+
+        hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
+        if hit_sword:
+            self.kill()
+            print("OH GOD IM DEAD")
+
+        hit_player = pygame.sprite.spritecollide(self, Swordgroup, False)
+        if hit_player:
+            pass
+        
+    
 
 
     
@@ -250,9 +309,18 @@ def main():
     global player1
     global health
     global effect
+    global sword
     effect = Effect()
     player1 = Player()
     health = HealthBar()
+    sword = Sword()
+    global Swordgroup
+    Swordgroup = pygame.sprite.Group()
+    Swordgroup.add(sword)
+    global Playergroup
+    Playergroup = pygame.sprite.Group()
+    Playergroup.add(player1)
+ 
 
     
    
@@ -266,6 +334,7 @@ def main():
     playereffectsprites = pygame.sprite.RenderPlain((effect))
     enemysprites = pygame.sprite.RenderPlain((enemy))
     healthsprites = pygame.sprite.RenderPlain((health))
+    swordsprites = pygame.sprite.RenderPlain((sword))
     
 
     # Blit everything to the screen
@@ -280,6 +349,8 @@ def main():
     hit_cooldown = pygame.USEREVENT + 1
     global dash_cooldown
     dash_cooldown = pygame.USEREVENT + 2
+    global attack_cooldown
+    attack_cooldown = pygame.USEREVENT + 3
     global testing
     testing = True
 
@@ -305,6 +376,8 @@ def main():
             if event.type == dash_cooldown:
                 player1.d_cooldown = False
                 effect.neutral()
+            if event.type == attack_cooldown:
+                sword.neutral()
             if event.type == QUIT:
                 return
 
@@ -324,11 +397,19 @@ def main():
                     #player1.moveright()
                     moveRight = True
                 if event.key == K_RIGHT:
-                    print('attack right keydown')
-                    if player1.attacking == "":
-                        print('triggering attack func')
-                        player1.attack("RIGHT")
-                        player1.attacking = "RIGHT"
+                    print('attack RIGHT keydown')
+                    sword.attack("RIGHT")
+                if event.key == K_LEFT:
+                    print('attack LEFT keydown')
+                    sword.attack("LEFT")
+                if event.key == K_UP:
+                    print('attack UP keydown')
+                    sword.attack("UP")
+                if event.key == K_DOWN:
+                    print('attack DOWN keydown')
+                    sword.attack("DOWN")
+                
+                    
 
                 # Abilities
                 if event.key == K_SPACE:
@@ -410,6 +491,9 @@ def main():
 
         healthsprites.update()
         healthsprites.draw(screen)
+
+        swordsprites.update(player1)
+        swordsprites.draw(screen)
         
         pygame.display.flip()
 
