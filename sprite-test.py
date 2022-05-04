@@ -12,9 +12,9 @@ from pygame.locals import *
 
 
 # Health images
-health_ani = [pygame.image.load("nohealthc.gif"), pygame.image.load("1healthc.gif"),
-              pygame.image.load("2healthc.gif"), pygame.image.load("3healthc.gif"),
-              pygame.image.load("4healthc.gif"), pygame.image.load("5healthc.gif")]
+health_ani = [pygame.image.load("nohealth.png"), pygame.image.load("1health.png"),
+              pygame.image.load("2health.png"), pygame.image.load("3health.png"),
+              pygame.image.load("4health.png"), pygame.image.load("5health.png")]
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -92,9 +92,12 @@ class Player(pygame.sprite.Sprite):
             health.image = health_ani[self.health]
              
             if self.health <= 0:
+                health.image = pygame.image.load("nohealth.png")
                 self.kill()
                 health.dead()
                 effect.player_death()
+                global game_over 
+                game_over = True
                 pygame.display.update()
                 
 
@@ -267,13 +270,13 @@ class Enemy(pygame.sprite.Sprite):
 class HealthBar(pygame.sprite.Sprite):
       def __init__(self):
             super().__init__()
-            self.image = pygame.image.load("5healthc.gif")
+            self.image = pygame.image.load("5health.png")
             self.rect = self.image.get_rect()
  
       # Game over is handeled in the health sprite because its easier
       def dead(self):
-          self.image = pygame.image.load("gameoverc.gif")
-          self.rect =  (200,200)   # self.image.get_rect()
+          self.image = pygame.image.load("gameover.png")
+          self.rect =  (220,150)   # self.image.get_rect()
 
 
 
@@ -334,6 +337,8 @@ def main():
     dash_cooldown = pygame.USEREVENT + 2
     global attack_cooldown
     attack_cooldown = pygame.USEREVENT + 3
+    global game_over
+    game_over = False
     global testing
     testing = True
 
@@ -352,7 +357,7 @@ def main():
         moveRight = False
         moveLeft = False
         dashKey = False
-
+        
         for event in pygame.event.get():
             if event.type == hit_cooldown:
                 player1.cooldown = False
@@ -365,7 +370,7 @@ def main():
                 return
 
             # Get key positions to be used later
-            elif event.type == KEYDOWN:
+            elif event.type == KEYDOWN and game_over == False:
                 # Base Movement keys
                 if event.key == K_w:
                     #player1.moveup()
@@ -402,9 +407,12 @@ def main():
                 # Testing
                 if event.key == K_k and testing:
                     player1.player_hit()
+                if event.key == K_l and testing:
+                    player1.health = 1
+                    player1.player_hit()
 
                 
-            elif event.type == KEYUP:
+            elif event.type == KEYUP and game_over == False:
                 #if event.key == K_a or event.key == K_w or event.key == K_s or event.key == K_d:
                 #    player1.movepos = [0,0]
                 #    player1.state = "still"
