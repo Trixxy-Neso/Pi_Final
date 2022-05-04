@@ -1,6 +1,8 @@
 from bdb import effective
 from random import randint
 import math
+from tkinter import Frame
+from wsgiref.handlers import format_date_time
 import pygame
 from socket import *
 from pygame.locals import *
@@ -29,8 +31,9 @@ class Player(pygame.sprite.Sprite):
         self.health = 5
         self.cooldown = False
         self.d_cooldown = False
+        self.invuln_cooldown = False
         self.dashAbility = True
-        
+        self.frame_switch = 1
 
     def reinit(self):
         self.state = "stopdown"
@@ -63,20 +66,43 @@ class Player(pygame.sprite.Sprite):
                 self.image = pygame.image.load("fleft.png")
 
         elif self.movepos[1] < 0:
-            self.image = pygame.image.load("up1.png")
+            if self.frame_switch == 1:
+                self.image = pygame.image.load("up1.png")
+            else:
+                self.image = pygame.image.load("up2.png")
 
         elif self.movepos[1] > 0:
-            self.image = pygame.image.load("down1.png")
+            if self.frame_switch == 1:
+                self.image = pygame.image.load("down1.png")
+            else:
+                self.image = pygame.image.load("down2.png")
 
         elif self.movepos[0] > 0:
-            self.image = pygame.image.load("right1.png")
+            if self.frame_switch == 1:
+                self.image = pygame.image.load("right1.png")
+            else:
+                self.image = pygame.image.load("right2.png")
 
         elif self.movepos[0] < 0:
-            self.image = pygame.image.load("left1.png")
+            if self.frame_switch == 1:
+                self.image = pygame.image.load("left1.png")
+            else:
+                self.image = pygame.image.load("left2.png")
 
+        if self.cooldown == True:
+            self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD)
+
+        if self.invuln_cooldown == True:
+            self.image.fill((60, 0, 0, 100), special_flags=pygame.BLEND_SUB)
         
         
-        
+    def frameUpdate(self):
+        if self.frame_switch == 1:
+            self.frame_switch = 2
+        else:
+            self.frame_switch = 1
+        pygame.time.set_timer(frame_cooldown, 100)
+
             
 
     def moveup(self):
@@ -113,7 +139,7 @@ class Player(pygame.sprite.Sprite):
 
 
     def player_hit(self):
-        if self.cooldown == False:      
+        if self.cooldown == False and self.invuln_cooldown == False:      
             self.cooldown = True # Enable the cooldown
             pygame.time.set_timer(hit_cooldown, 1000) # Resets cooldown in 1 second
             self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD) # Red tint
@@ -137,8 +163,8 @@ class Player(pygame.sprite.Sprite):
             self.d_cooldown = True
             pygame.time.set_timer(dash_cooldown, 5000)
 
-            self.cooldown = True # Hit cooldown
-            pygame.time.set_timer(hit_cooldown, 1000) 
+            self.invuln_cooldown = True # Hit cooldown
+            pygame.time.set_timer(invuln_cooldown, 1000) 
             
             self.image.fill((60, 0, 0, 100), special_flags=pygame.BLEND_SUB)
 
@@ -453,6 +479,10 @@ def main():
     dash_cooldown = pygame.USEREVENT + 2
     global attack_cooldown
     attack_cooldown = pygame.USEREVENT + 3
+    global invuln_cooldown
+    invuln_cooldown = pygame.USEREVENT + 4
+    global frame_cooldown 
+    frame_cooldown = pygame.USEREVENT + 5
     global game_over
     game_over = False
     global testing
@@ -460,6 +490,7 @@ def main():
     wave_fin = True
     wave_num = 1
     show_notice = False
+    player1.frameUpdate()
 
 
     # Event loop
@@ -491,6 +522,10 @@ def main():
                 effect.neutral()
             if event.type == attack_cooldown:
                 sword.neutral()
+            if event.type == invuln_cooldown:
+                player1.invuln_cooldown = False
+            if event.type == frame_cooldown:
+                player1.frameUpdate()
             if event.type == KEYDOWN and event.key == K_ESCAPE:
                 return
             if event.type == QUIT:
