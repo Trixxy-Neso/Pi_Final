@@ -402,7 +402,7 @@ def main():
     pygame.init()
     
     screen = pygame.display.set_mode((800, 450))
-    pygame.display.set_caption('Some bread pun')
+    pygame.display.set_caption('Dough Gone Sour')
 
 
     # Fill background
