@@ -251,7 +251,7 @@ class Effect(pygame.sprite.Sprite):
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("enen.gif")
+        self.image = pygame.image.load("breadc.png")
         self.rect = self.image.get_rect()
         #random spawn locations
         tryspawn = True
@@ -300,7 +300,9 @@ class HealthBar(pygame.sprite.Sprite):
 class NoticeBoard(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("nextwave.png")
+        #self.image = pygame.image.load("nextwave.png")
+        self.font = pygame.font.Font("font.ttf", 25)
+        self.image = self.font.render("PRESS 'ENTER' TO START THE NEXT WAVE", True, (0,0,0))
         self.rect = self.image.get_rect()
         self.hide()
         screen = pygame.display.get_surface()
@@ -308,7 +310,7 @@ class NoticeBoard(pygame.sprite.Sprite):
 
     def show(self):
         self.rect.center = self.area.center #- (self.rect.width/2)
-        self.rect.y = 60
+        self.rect.y = 80
 
     def hide(self):
         self.rect.x = -100
@@ -321,9 +323,24 @@ class Backdrop(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
 
+class WaveCounter(pygame.sprite.Sprite):
+    
+    def __init__(self):
+        super().__init__()
+        self.font = pygame.font.Font("font.ttf", 20)
+        self.image = self.font.render('YOU ARE ON WAVE 0', True, (0,0,0))
+        self.rect = self.image.get_rect()
+        self.rect.x = 550
+        self.rect.y = 30
+
+    def tick(self, wave_num):
+        self.image = self.font.render(f'YOU ARE ON WAVE {wave_num}', True, (0,0,0))
+
+
 def main():
     # Initialise screen
     pygame.init()
+    
     screen = pygame.display.set_mode((800, 450))
     pygame.display.set_caption('Some bread pun')
 
@@ -364,6 +381,9 @@ def main():
     global bgimage
     bgimage = Backdrop()
 
+    global wave_counter
+    wave_counter = WaveCounter()
+
 
     # Initialize enemies
     global Enemygroup
@@ -379,7 +399,7 @@ def main():
     playersprites = pygame.sprite.RenderPlain((player1))
     playereffectsprites = pygame.sprite.RenderPlain((effect))
     enemysprites = pygame.sprite.RenderPlain()   
-    backgroundsprites = pygame.sprite.RenderPlain((health, notice))
+    backgroundsprites = pygame.sprite.RenderPlain((health, notice, wave_counter))
     swordsprites = pygame.sprite.RenderPlain((sword))
     theverybackgroundsprites = pygame.sprite.RenderPlain((bgimage))
 
@@ -487,6 +507,7 @@ def main():
                     show_notice = False
                     wave_fin = False
                     addEnemies(wave_num)
+                    wave_counter.tick(wave_num)
                     wave_num += 1
                     notice.hide()
                     print("starting next wave")
@@ -556,6 +577,7 @@ def main():
         screen.blit(background, health.rect)
         screen.blit(background, sword.rect)
         screen.blit(background, bgimage.rect)
+        
         
         theverybackgroundsprites.update()
         theverybackgroundsprites.draw(screen)
