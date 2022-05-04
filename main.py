@@ -15,7 +15,7 @@ health_ani = [pygame.image.load("nohealth.png"), pygame.image.load("1health.png"
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load("breadc.png")
+        self.image = pygame.image.load("ffront.png")
         self.rect = self.image.get_rect()
         self.rect.x = 300
         self.rect.y = 220
@@ -33,7 +33,7 @@ class Player(pygame.sprite.Sprite):
         
 
     def reinit(self):
-        self.state = "still"
+        self.state = "stopdown"
         self.movepos = [0,0]
         
         #self.rect.midleft = self.area.midleft
@@ -47,6 +47,36 @@ class Player(pygame.sprite.Sprite):
         hit_player = pygame.sprite.spritecollide(self, Enemygroup, False)
         if hit_player:
             self.player_hit()
+
+        if self.movepos[0] == 0 and self.movepos[1] == 0:
+            
+            if self.state == "stopup":
+                self.image = pygame.image.load("fback.png")
+
+            elif self.state == "stopdown":
+                self.image = pygame.image.load("ffront.png")
+
+            elif self.state == "stopright":
+                self.image = pygame.image.load("fright.png")
+
+            elif self.state == "stopleft":
+                self.image = pygame.image.load("fleft.png")
+
+        elif self.movepos[1] < 0:
+            self.image = pygame.image.load("up1.png")
+
+        elif self.movepos[1] > 0:
+            self.image = pygame.image.load("down1.png")
+
+        elif self.movepos[0] > 0:
+            self.image = pygame.image.load("right1.png")
+
+        elif self.movepos[0] < 0:
+            self.image = pygame.image.load("left1.png")
+
+        
+        
+        
             
 
     def moveup(self):
@@ -67,19 +97,19 @@ class Player(pygame.sprite.Sprite):
 
     def stopmoveup(self):
         self.movepos[1] += 5
-        self.state = "still"
+        self.state = "stopup"
 
     def stopmovedown(self):
         self.movepos[1] += -5
-        self.state = "still"
+        self.state = "stopdown"
 
     def stopmoveleft(self):
         self.movepos[0] += 5
-        self.state = "still"
+        self.state = "stopleft"
 
     def stopmoveright(self):
         self.movepos[0] += -5
-        self.state = "still"
+        self.state = "stopright"
 
 
     def player_hit(self):
@@ -316,11 +346,14 @@ class NoticeBoard(pygame.sprite.Sprite):
         self.rect.x = -100
         self.rect.y = -300
 
+
+
 class Backdrop(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         self.image = pygame.image.load("background.png")
         self.rect = self.image.get_rect()
+
 
 
 class WaveCounter(pygame.sprite.Sprite):
@@ -335,6 +368,7 @@ class WaveCounter(pygame.sprite.Sprite):
 
     def tick(self, wave_num):
         self.image = self.font.render(f'YOU ARE ON WAVE {wave_num}', True, (0,0,0))
+
 
 
 def main():
