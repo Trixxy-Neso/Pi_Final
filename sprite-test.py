@@ -51,6 +51,7 @@ class Player(pygame.sprite.Sprite):
         hit_player = pygame.sprite.spritecollide(self, Enemygroup, False)
         if hit_player:
             self.player_hit()
+            
 
     def moveup(self):
         self.movepos[1] += -5
@@ -175,7 +176,7 @@ class Sword(pygame.sprite.Sprite):
     def attack(self, direction):
         if self.cooldown == False:
             self.cooldown = True
-            pygame.time.set_timer(attack_cooldown, 500)
+            pygame.time.set_timer(attack_cooldown, 200)
             self.point = direction 
 
     def neutral(self):
@@ -192,26 +193,31 @@ class Sword(pygame.sprite.Sprite):
             
             if self.point == "RIGHT":
                 self.image = pygame.image.load("swordR.png")
+                self.rect = self.image.get_rect()
                 self.rect.x = pcx + 20
                 self.rect.y = pcy - 10
 
             if self.point == "LEFT":
                 self.image = pygame.image.load("swordL.png")
+                self.rect = self.image.get_rect()
                 self.rect.x = pcx - 80
                 self.rect.y = pcy - 10
 
             if self.point == "UP":
                 self.image = pygame.image.load("swordU.png")
+                self.rect = self.image.get_rect()
                 self.rect.x = pcx - 15
                 self.rect.y = pcy - 80
 
             if self.point == "DOWN":
                 self.image = pygame.image.load("swordD.png")
+                self.rect = self.image.get_rect()
                 self.rect.x = pcx - 15
                 self.rect.y = pcy + 20
 
         else:
             self.image = pygame.image.load("swordL.png")
+            self.rect = self.image.get_rect()
             self.rect.x = -100
             self.rect.y = -100
 
@@ -256,12 +262,12 @@ class Enemy(pygame.sprite.Sprite):
         self.speed = 2
         
     def update(self, player): # has the enemy move with/to player
-        dx = player.rect.x - self.rect.x
-        dx = dx - ((player1.rect.width / 4) + (self.rect.width / 4))
-        dy = player.rect.y - self.rect.y
-        dy = dy - ((player1.rect.height / 4) + (self.rect.height / 4))
+        dx = (player.rect.x - (player.rect.width/2) - 55) - (self.rect.x - (self.rect.width/2))
+        #dx = dx - ((player1.rect.width / 4) + (self.rect.width / 4))
+        dy = (player.rect.y - (player.rect.height/2)) - (self.rect.y - (self.rect.height/2))
+        #dy = dy - ((player1.rect.height / 4) + (self.rect.height / 4))
         dist = math.hypot(dx, dy)
-        if dist > 5:
+        if dist > 40:
             dx, dy = dx / dist, dy / dist
             self.rect.x += dx * self.speed
             self.rect.y += dy * self.speed
@@ -486,6 +492,7 @@ def main():
                 if event.key == K_s:
                     player1.stopmovedown()
 
+
         ## Act on keypositions retrieved ##
 
         # Dash
@@ -523,6 +530,8 @@ def main():
             player1.moveright()
         if moveLeft:
             player1.moveleft()
+
+        # Render Stuffs 
 
         for enemy in enemysprites:
             screen.blit(background, enemy.rect)
