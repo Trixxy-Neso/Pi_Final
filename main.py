@@ -1,11 +1,12 @@
 from bdb import effective
 from random import randint
 import math
-from tkinter import Frame
+from turtle import Screen, back
 from wsgiref.handlers import format_date_time
 import pygame
 from socket import *
 from pygame.locals import *
+from itertools import cycle
 
 
 
@@ -20,8 +21,8 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.image.load("ffront.png")
         self.rect = self.image.get_rect()
         self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
-        self.rect.x = 300
-        self.rect.y = 220
+        self.rect.x = 280
+        self.rect.y = 130
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.speed = 10
@@ -44,8 +45,8 @@ class Player(pygame.sprite.Sprite):
         #self.rect.midleft = self.area.midleft
 
     def reset(self):
-        self.rect.x = 300
-        self.rect.y = 220
+        self.rect.x = 280
+        self.rect.y = 130
         self.state = "still"
         self.attack_frame = 0
         self.health = 5
@@ -319,7 +320,7 @@ class Effect(pygame.sprite.Sprite):
         pcy = player.rect.y #- (player.rect.height / 2)
 
         self.rect.x = pcx - 13
-        self.rect.y = pcy - 5
+        self.rect.y = pcy - 10
 
 ##### IMPORTANT #####
 # This is the only way to get the enemy/palyer behind-infront illusion to work as you can't render entities in the same group at diffrent layers.
@@ -409,6 +410,7 @@ class HealthBar(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
+        self.hide()
 
     # Game over is handeled in the health sprite because its easier, turns the health bar into the game over because the health bar is gone wanyway
     def dead(self):
@@ -418,20 +420,30 @@ class HealthBar(pygame.sprite.Sprite):
     def reset(self):
         self.image = pygame.image.load("5health.png")
         self.rect = self.image.get_rect()
+        if intro:
+            self.hide()
+        
+    def show(self):
+        self.rect = self.image.get_rect()
 
-
+    def hide(self):
+        self.rect.x = -100
+        self.rect.y = -300
 
 
 class NoticeBoard(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         #self.image = pygame.image.load("nextwave.png")
-        self.font = pygame.font.Font("font.ttf", 25)
-        self.image = self.font.render("PRESS 'ENTER' TO START THE NEXT WAVE", True, (0,0,0))
-        self.rect = self.image.get_rect()
-        self.hide()
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
+        self.font = pygame.font.Font("font.ttf", 25)
+        self.image = self.font.render("PRESS 'ENTER' TO START THE FIRST WAVE", True, (0,0,0))
+        self.rect = self.image.get_rect()
+        self.rect.center = self.area.center
+        self.rect.y = 370
+        #self.hide()
+        
 
     def nextWave(self):
         self.font = pygame.font.Font("font.ttf", 25)
@@ -458,13 +470,94 @@ class NoticeBoard(pygame.sprite.Sprite):
         self.rect.y = -300
 
 
-
 class Backdrop(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load("background.png")
+        self.image = pygame.image.load("title.png")
         self.rect = self.image.get_rect()
+        self.rect.x += -8
+        self.rect.y += -3
+        self.fading = None
+        self.alpha = 0
+        self.switch = 0
+        
+    
+    '''    
+    def next(self):
+        if not self.fading:
+            self.fading = 'OUT'
+            self.alpha = 200    
+        
+    def update(self):
+        self.image.set_alpha(self.alpha)
+            
+        if self.fading == 'OUT':
+            self.alpha -= 4
+            if self.alpha <= 0:
+                self.fading = 'IN'
+                #self.scene = next(self.scenes)
+                if self.switch == 0:
+                    self.image = pygame.image.load("background.png")
+                    self.image.set_alpha(0)
+                    self.switch = 1
+                else:
+                    self.image = pygame.image.load("title.png")
+                    self.image.set_alpha(0)
+                    self.switch = 0
+        else:
+            self.alpha += 4
+            if self.alpha >= 255:
+                self.fading = None    
+    '''
 
+class Veil(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pygame.Surface((750,450))
+        self.image = self.image.convert()
+        self.image.fill((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.fading = None
+        self.alpha = 0
+        self.switch = 0
+        self.image.set_alpha(50)
+        
+    def next(self):
+        if not self.fading:
+            self.fading = 'IN'
+            self.alpha = 50    
+        
+    def update(self):
+        self.image.set_alpha(self.alpha)
+            
+        if self.fading == 'IN':
+            self.alpha += 4
+            print("Fading in")
+            if self.alpha >= 255:
+                self.fading = 'OUT'
+                if self.switch == 0:
+                    bgimage.image = pygame.image.load("background.png")
+                    bgimage.rect.x = 0
+                    bgimage.rect.y = 0
+                    #self.image.set_alpha(0)
+                    self.switch = 1
+                    health.show()
+                    wave_counter.show()
+                    global intro
+                    intro = False
+                else:
+                    bgimage.image = pygame.image.load("title.png")
+                    bgimage.rect.x += -8
+                    bgimage.rect.y += -3
+                    #self.image.set_alpha(0)
+                    self.switch = 0
+                    health.hide()
+                    wave_counter.hide()
+        elif self.fading == 'OUT':
+            print("fading out")
+            self.alpha -= 4
+            if self.alpha <= 0:
+                self.fading = None    
 
 
 class WaveCounter(pygame.sprite.Sprite):
@@ -479,13 +572,78 @@ class WaveCounter(pygame.sprite.Sprite):
 
     def tick(self, wave_num):
         self.image = self.font.render(f'YOU ARE ON WAVE {wave_num}', True, (0,0,0))
+        
+    def show(self):
+        self.rect.x = 500
+        self.rect.y = 30
 
+    def hide(self):
+        self.rect.x = -100
+        self.rect.y = -300
 
+class Leaf(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        type = randint(0,1)
+        if type == 1:
+            self.image = pygame.image.load("leaf.png")
+            flipped = randint(0,1)
+            if flipped == 1:
+                self.image = pygame.transform.flip(self.image, True, True)
+            else:
+                self.image = pygame.transform.flip(self.image, False, True)
+        else:
+            self.image = pygame.image.load("leaf2.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = randint(5,900)
+        self.rect.y = -10
+        self.scaleRandomness = randint(-5,5)
+        self.image = pygame.transform.scale(self.image, (25 + self.scaleRandomness, 25 + self.scaleRandomness))
+        self.moveSpeedX = 0
+        self.moveSpeedY = 1
 
+    def update(self):
+        x = randint(-1,0)
+        y = randint(0,1)
+        self.rect.x += self.moveSpeedX + x
+        self.rect.y += self.moveSpeedY + y
+
+class Fire(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        type = randint(0,1)
+        if type == 1:
+            self.image = pygame.image.load("leaf.png")
+            flipped = randint(0,1)
+            if flipped == 1:
+                self.image = pygame.transform.flip(self.image, True, True)
+            else:
+                self.image = pygame.transform.flip(self.image, False, True)
+        else:
+            self.image = pygame.image.load("leaf2.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = randint(5,900)
+        self.rect.y = -10
+        self.scaleRandomness = randint(-5,5)
+        self.image = pygame.transform.scale(self.image, (25 + self.scaleRandomness, 25 + self.scaleRandomness))
+        self.moveSpeedX = 0
+        self.moveSpeedY = 1
+
+    def update(self):
+        x = randint(-1,0)
+        y = randint(0,1)
+        self.rect.x += self.moveSpeedX + x
+        self.rect.y += self.moveSpeedY + y
+ 
+       
+       
+       
+       
 def main():
     # Initialise screen
     pygame.init()
     
+    global screen
     screen = pygame.display.set_mode((750, 450))
     pygame.display.set_caption('Dough Gone Sour')
 
@@ -494,9 +652,11 @@ def main():
     background = pygame.Surface(screen.get_size())
     #background = pygame.image.load("background.png")
     background = background.convert()
-    background.fill((0, 128, 0))
+    background.fill((0, 0, 0))
 
 
+    
+    
     # Initialise players
     global effect
     effect = Effect()
@@ -528,7 +688,15 @@ def main():
 
     global wave_counter
     wave_counter = WaveCounter()
+    
+    global veil_layer
+    veil_layer = Veil()
 
+    def addLeaf():
+        chance = randint(0,70)
+        if chance == 70:
+            i = Leaf()
+            decosprites.add(i)
 
     # Initialize enemies
     global EnemyUppergroup
@@ -563,9 +731,11 @@ def main():
     playereffectsprites = pygame.sprite.RenderPlain((effect))
     enemyuppersprites = pygame.sprite.RenderPlain() 
     enemylowersprites = pygame.sprite.RenderPlain()    
-    backgroundsprites = pygame.sprite.RenderPlain((health, notice, wave_counter))
+    foregroundsprites = pygame.sprite.RenderPlain((health, notice, wave_counter))
     swordsprites = pygame.sprite.RenderPlain((sword))
     theverybackgroundsprites = pygame.sprite.RenderPlain((bgimage))
+    decosprites = pygame.sprite.RenderPlain()
+    veilsprites = pygame.sprite.RenderPlain((veil_layer))
 
     # Blit everything to the screen
     screen.blit(background, (0, 0))
@@ -588,12 +758,14 @@ def main():
     global frame_cooldown 
     frame_cooldown = pygame.USEREVENT + 5
     global game_over
-    game_over = False
+    game_over = True
     global testing
     testing = True
+    global intro 
+    intro = True
     wave_fin = True
     global wave_num
-    wave_num = 1
+    wave_num = 0
     show_notice = False
     player1.frameUpdate()
 
@@ -609,23 +781,29 @@ def main():
         global game_over
         game_over = False
         global notice
-        notice.restart()
+        #notice.restart()
         player1.reset()
         health.reset()
-        for enemy in Enemygroup:
+        for enemy in EnemyUppergroup:
             enemy.kill()
 
+        for enemy in EnemyLowergroup:
+            enemy.kill()
+        
+        
+    health.hide()
+    wave_counter.hide()
 
     # Event loop
     while 1:
         # Make sure game doesn't run at more than 60 frames per second
         clock.tick(60)
         
-        if wave_fin == True and show_notice == False:
+        if wave_fin == True and show_notice == False and intro == False:
             notice.show()
             show_notice = True
 
-        if len(enemyuppersprites) == 0:
+        if len(enemyuppersprites) == 0 and intro == False:
             wave_fin = True
             notice.nextWave()
             #notice.hide()
@@ -637,7 +815,7 @@ def main():
         moveLeft = False
         dashKey = False
         
-        if game_over:
+        if game_over and intro == False:
             notice.restart()
         
 
@@ -662,7 +840,12 @@ def main():
                 if event.key == K_RETURN:
                     restart()
                     print("restarting")
-
+                    #intro = False
+                    if intro:
+                        veil_layer.next()
+                    #health.show()
+                    #wave_counter.show()
+                    
             # Get key positions to be used later
             elif event.type == KEYDOWN and game_over == False:
                 # Base Movement keys
@@ -771,6 +954,8 @@ def main():
         if moveLeft:
             player1.moveleft()
 
+        if intro == False:
+            addLeaf()
 
         # Update stuffs
         theverybackgroundsprites.update()
@@ -779,9 +964,10 @@ def main():
             enemylowersprites.update(player1)
         playereffectsprites.update(player1)
         playersprites.update()
-        backgroundsprites.update()
-        backgroundsprites.update()
+        foregroundsprites.update()
         swordsprites.update(player1)
+        decosprites.update()
+        veilsprites.update()
 
 
         # Render Stuffs 
@@ -791,13 +977,15 @@ def main():
 
         for enemy in enemylowersprites:
             screen.blit(background, enemy.rect)
-
-        
+            
+        for leaf in decosprites:
+            screen.blit(background, leaf.rect)
             
         screen.blit(background, player1.rect)
         screen.blit(background, health.rect)
-        screen.blit(background, sword.rect)
+        screen.blit(background, sword.rect)     
         screen.blit(background, bgimage.rect)
+        screen.blit(background, veil_layer.rect)
         
         theverybackgroundsprites.draw(screen)
        
@@ -806,12 +994,17 @@ def main():
         enemyuppersprites.draw(screen)
 
         playersprites.draw(screen)
+        
+        swordsprites.draw(screen)
 
         enemylowersprites.draw(screen)
 
-        backgroundsprites.draw(screen)
+        decosprites.draw(screen)
+ 
+        foregroundsprites.draw(screen)
    
-        swordsprites.draw(screen)
+        veilsprites.draw(screen)
+        
         
         pygame.display.flip()
 
