@@ -1,4 +1,5 @@
 from bdb import effective
+from lib2to3.pgen2.token import BACKQUOTE
 from random import randint
 import math
 from turtle import Screen, back
@@ -438,12 +439,17 @@ class NoticeBoard(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.font = pygame.font.Font("font.ttf", 25)
-        self.image = self.font.render("PRESS 'ENTER' TO START THE FIRST WAVE", True, (0,0,0))
+        self.image = self.font.render("PRESS 'ENTER' TO BEGIN", True, (0,0,0))
         self.rect = self.image.get_rect()
         self.rect.center = self.area.center
         self.rect.y = 370
         #self.hide()
         
+    def title(self):
+        self.image = self.font.render("PRESS 'ENTER' TO BEGIN", True, (0,0,0))
+        self.rect = self.image.get_rect()
+        self.rect.center = self.area.center
+        self.rect.y = 370
 
     def nextWave(self):
         self.font = pygame.font.Font("font.ttf", 25)
@@ -462,8 +468,10 @@ class NoticeBoard(pygame.sprite.Sprite):
         self.rect.y = 80
 
     def show(self):
-        self.rect.center = self.area.center #- (self.rect.width/2)
-        self.rect.y = 80
+        if veil_layer.location != "Title":
+            self.rect.center = self.area.center #- (self.rect.width/2)
+            self.rect.y = 80
+
 
     def hide(self):
         self.rect.x = -100
@@ -478,38 +486,7 @@ class Backdrop(pygame.sprite.Sprite):
         self.rect.x += -8
         self.rect.y += -3
         self.fading = None
-        self.alpha = 0
-        self.switch = 0
         
-    
-    '''    
-    def next(self):
-        if not self.fading:
-            self.fading = 'OUT'
-            self.alpha = 200    
-        
-    def update(self):
-        self.image.set_alpha(self.alpha)
-            
-        if self.fading == 'OUT':
-            self.alpha -= 4
-            if self.alpha <= 0:
-                self.fading = 'IN'
-                #self.scene = next(self.scenes)
-                if self.switch == 0:
-                    self.image = pygame.image.load("background.png")
-                    self.image.set_alpha(0)
-                    self.switch = 1
-                else:
-                    self.image = pygame.image.load("title.png")
-                    self.image.set_alpha(0)
-                    self.switch = 0
-        else:
-            self.alpha += 4
-            if self.alpha >= 255:
-                self.fading = None    
-    '''
-
 class Veil(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -519,42 +496,43 @@ class Veil(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.fading = None
         self.alpha = 0
-        self.switch = 0
         self.image.set_alpha(50)
+        self.location = "Title"
         
-    def next(self):
+    def next(self, location):
         if not self.fading:
             self.fading = 'IN'
-            self.alpha = 50    
+            self.alpha = 50
+            self.location = location    
+            print(f"sending to {location}")
         
     def update(self):
         self.image.set_alpha(self.alpha)
             
         if self.fading == 'IN':
             self.alpha += 4
-            print("Fading in")
             if self.alpha >= 255:
                 self.fading = 'OUT'
-                if self.switch == 0:
+                if self.location == "Title":
+                    bgimage.image = pygame.image.load("title.png")
+                    bgimage.rect.x = -8
+                    bgimage.rect.y = -3
+                    health.hide()
+                    wave_counter.hide()
+                    notice.title()
+                    global game_over
+                    game_over = True
+                else:
                     bgimage.image = pygame.image.load("background.png")
                     bgimage.rect.x = 0
                     bgimage.rect.y = 0
-                    #self.image.set_alpha(0)
-                    self.switch = 1
+                #self.image.set_alpha(0)
+                if self.location != "Title":
                     health.show()
                     wave_counter.show()
-                    global intro
-                    intro = False
-                else:
-                    bgimage.image = pygame.image.load("title.png")
-                    bgimage.rect.x += -8
-                    bgimage.rect.y += -3
-                    #self.image.set_alpha(0)
-                    self.switch = 0
-                    health.hide()
-                    wave_counter.hide()
+                global intro
+                intro = False
         elif self.fading == 'OUT':
-            print("fading out")
             self.alpha -= 4
             if self.alpha <= 0:
                 self.fading = None    
@@ -804,7 +782,8 @@ def main():
 
         if len(enemyuppersprites) == 0 and intro == False:
             wave_fin = True
-            notice.nextWave()
+            if veil_layer.location == "Feild":
+                notice.nextWave()
             #notice.hide()
 
         # Setup key positions 
@@ -814,7 +793,7 @@ def main():
         moveLeft = False
         dashKey = False
         
-        if game_over and intro == False:
+        if game_over and intro == False and veil_layer.location != "Title":
             notice.restart()
         
 
@@ -841,9 +820,15 @@ def main():
                     print("restarting")
                     #intro = False
                     if intro:
-                        veil_layer.next()
+                        veil_layer.next("Feild")
                     #health.show()
                     #wave_counter.show()
+                if event.key == K_BACKSPACE and intro == False:
+                    veil_layer.next("Title")
+                    restart()
+                    print("moving to title")
+                    
+                    intro = True
                     
             # Get key positions to be used later
             elif event.type == KEYDOWN and game_over == False:
@@ -953,10 +938,10 @@ def main():
         if moveLeft:
             player1.moveleft()
 
-        if intro == False:
-            addLeaf()
-        else:
+        if veil_layer.location == "Title":
             addFire()
+        else:
+            addLeaf()
 
         # Update stuffs
         theverybackgroundsprites.update()
