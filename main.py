@@ -19,6 +19,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("ffront.png")
         self.rect = self.image.get_rect()
+        self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
         self.rect.x = 300
         self.rect.y = 220
         screen = pygame.display.get_surface()
@@ -34,12 +35,27 @@ class Player(pygame.sprite.Sprite):
         self.invuln_cooldown = False
         self.dashAbility = True
         self.frame_switch = 1
+        print("creating player")
 
     def reinit(self):
         self.state = "stopdown"
         self.movepos = [0,0]
         
         #self.rect.midleft = self.area.midleft
+
+    def reset(self):
+        self.rect.x = 300
+        self.rect.y = 220
+        self.state = "still"
+        self.attack_frame = 0
+        self.health = 5
+        self.cooldown = False
+        self.d_cooldown = False
+        self.invuln_cooldown = False
+        self.dashAbility = True
+        self.frame_switch = 1
+        print("reseting player")
+        self.image = pygame.image.load("ffront.png")
 
     def update(self):
         newpos = self.rect.move(self.movepos)
@@ -149,7 +165,9 @@ class Player(pygame.sprite.Sprite):
              
             if self.health <= 0:
                 health.image = pygame.image.load("nohealth.png")
-                self.kill()
+                #self.kill()
+                self.rect.x = -100
+                self.rect.y = -300
                 health.dead()
                 effect.player_death()
                 global game_over 
@@ -309,10 +327,14 @@ class Enemy(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("breadc.png")
         self.rect = self.image.get_rect()
+        self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
+
         #random spawn locations
         tryspawn = True
         while tryspawn:
-            self.rect.x = randint(10, 800)
+            self.rect.x = randint(10, 750)
             self.rect.y = randint(10, 450)
             dx = (player1.rect.x + (player1.rect.width/2) ) - (self.rect.x + (self.rect.width/2))
             dy = (player1.rect.y + (player1.rect.height/2)) - (self.rect.y + (self.rect.height/2))
@@ -337,7 +359,8 @@ class Enemy(pygame.sprite.Sprite):
         if hit_sword:
             self.kill()
             print("OH GOD IM DEAD")
-    
+
+
 
     
 class HealthBar(pygame.sprite.Sprite):
@@ -345,11 +368,18 @@ class HealthBar(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.image.load("5health.png")
         self.rect = self.image.get_rect()
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
 
     # Game over is handeled in the health sprite because its easier, turns the health bar into the game over because the health bar is gone wanyway
     def dead(self):
         self.image = pygame.image.load("gameover.png")
-        self.rect =  (220,150)   # self.image.get_rect()
+        self.rect.center = self.area.center
+
+    def reset(self):
+        self.image = pygame.image.load("5health.png")
+        self.rect = self.image.get_rect()
+
 
 
 
@@ -363,6 +393,22 @@ class NoticeBoard(pygame.sprite.Sprite):
         self.hide()
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
+
+    def nextWave(self):
+        self.font = pygame.font.Font("font.ttf", 25)
+        self.image = self.font.render("PRESS 'ENTER' TO START THE NEXT WAVE", True, (0,0,0))
+        self.rect = self.image.get_rect()
+        #print("set to next wave")
+        self.rect.center = self.area.center #- (self.rect.width/2)
+        self.rect.y = 80
+
+    def restart(self):
+        self.font = pygame.font.Font("font.ttf", 25)
+        self.image = self.font.render("PRESS 'ENTER' TO RESTART", True, (0,0,0))
+        self.rect = self.image.get_rect()
+        #print("set to restart")
+        self.rect.center = self.area.center #- (self.rect.width/2)
+        self.rect.y = 80
 
     def show(self):
         self.rect.center = self.area.center #- (self.rect.width/2)
@@ -389,7 +435,7 @@ class WaveCounter(pygame.sprite.Sprite):
         self.font = pygame.font.Font("font.ttf", 20)
         self.image = self.font.render('YOU ARE ON WAVE 0', True, (0,0,0))
         self.rect = self.image.get_rect()
-        self.rect.x = 550
+        self.rect.x = 500
         self.rect.y = 30
 
     def tick(self, wave_num):
@@ -401,7 +447,7 @@ def main():
     # Initialise screen
     pygame.init()
     
-    screen = pygame.display.set_mode((800, 450))
+    screen = pygame.display.set_mode((750, 450))
     pygame.display.set_caption('Dough Gone Sour')
 
 
@@ -449,10 +495,12 @@ def main():
     global Enemygroup
     Enemygroup = pygame.sprite.Group()
     def addEnemies(stage):
+        thic_num = int(stage / 2)
         for i in range(0, stage):
             i = Enemy()
             Enemygroup.add(i)           
             enemysprites.add(i)
+        
     
 
     # Initialise sprites
@@ -488,9 +536,28 @@ def main():
     global testing
     testing = True
     wave_fin = True
+    global wave_num
     wave_num = 1
     show_notice = False
     player1.frameUpdate()
+
+    def restart():
+        print("got here")
+        global wave_fin
+        wave_fin = True
+        global wave_num
+        wave_num = 1
+        wave_counter.tick(wave_num)
+        global show_notice
+        show_notice = False
+        global game_over
+        game_over = False
+        global notice
+        notice.restart()
+        player1.reset()
+        health.reset()
+        for enemy in Enemygroup:
+            enemy.kill()
 
 
     # Event loop
@@ -504,6 +571,7 @@ def main():
 
         if len(enemysprites) == 0:
             wave_fin = True
+            notice.nextWave()
             #notice.hide()
 
         # Setup key positions 
@@ -513,10 +581,14 @@ def main():
         moveLeft = False
         dashKey = False
         
+        if game_over:
+            notice.restart()
+        
+
         for event in pygame.event.get():
             if event.type == hit_cooldown:
                 player1.cooldown = False
-                player1.image = pygame.image.load("breadc.png") # reset red tint
+                player1.image = pygame.image.load("ffront.png") # reset red tint
             if event.type == dash_cooldown:
                 player1.d_cooldown = False
                 effect.neutral()
@@ -530,6 +602,10 @@ def main():
                 return
             if event.type == QUIT:
                 return
+            if event.type == KEYDOWN and game_over == True:
+                if event.key == K_RETURN:
+                    restart()
+                    print("restarting")
 
             # Get key positions to be used later
             elif event.type == KEYDOWN and game_over == False:
@@ -581,7 +657,8 @@ def main():
                     notice.hide()
                     print("starting next wave")
 
-                
+            
+
             elif event.type == KEYUP and game_over == False:
                 #if event.key == K_a or event.key == K_w or event.key == K_s or event.key == K_d:
                 #    player1.movepos = [0,0]
@@ -638,32 +715,38 @@ def main():
         if moveLeft:
             player1.moveleft()
 
+
+        # Update stuffs
+        theverybackgroundsprites.update()
+        if game_over == False:
+            enemysprites.update(player1)
+        playereffectsprites.update(player1)
+        playersprites.update()
+        backgroundsprites.update()
+        backgroundsprites.update()
+        swordsprites.update(player1)
+
+
         # Render Stuffs 
 
         for enemy in enemysprites:
             screen.blit(background, enemy.rect)
+            
         screen.blit(background, player1.rect)
         screen.blit(background, health.rect)
         screen.blit(background, sword.rect)
         screen.blit(background, bgimage.rect)
         
-        
-        theverybackgroundsprites.update()
         theverybackgroundsprites.draw(screen)
-
-        enemysprites.update(player1)
-        enemysprites.draw(screen)
-
-        playereffectsprites.update(player1)
+       
+        #enemysprites.draw(screen)
+     
         playereffectsprites.draw(screen)
 
-        playersprites.update()
         playersprites.draw(screen)
 
-        backgroundsprites.update()
         backgroundsprites.draw(screen)
-
-        swordsprites.update(player1)
+   
         swordsprites.draw(screen)
         
         pygame.display.flip()
