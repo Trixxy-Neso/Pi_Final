@@ -612,32 +612,25 @@ class Fire(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         type = randint(0,1)
-        if type == 1:
-            self.image = pygame.image.load("leaf.png")
-            flipped = randint(0,1)
-            if flipped == 1:
-                self.image = pygame.transform.flip(self.image, True, True)
-            else:
-                self.image = pygame.transform.flip(self.image, False, True)
-        else:
-            self.image = pygame.image.load("leaf2.png")
+        self.image = pygame.image.load("fire.png")
         self.rect = self.image.get_rect()
-        self.rect.x = randint(5,900)
-        self.rect.y = -10
-        self.scaleRandomness = randint(-5,5)
-        self.image = pygame.transform.scale(self.image, (25 + self.scaleRandomness, 25 + self.scaleRandomness))
+        self.rect.x = randint(355,375)
+        self.rect.y = randint(210,220)
+        self.scaleRandomness = randint(-3,3)
+        self.image = pygame.transform.scale(self.image, (self.image.get_width() + self.scaleRandomness, self.image.get_height() + self.scaleRandomness))
         self.moveSpeedX = 0
-        self.moveSpeedY = 1
+        self.moveSpeedY = -1
 
     def update(self):
-        x = randint(-1,0)
-        y = randint(0,1)
+        x = randint(-2,0)/2
+        y = randint(-2,0)
         self.rect.x += self.moveSpeedX + x
         self.rect.y += self.moveSpeedY + y
  
        
-       
-       
+######################################################################
+#                             MAIN                                   #
+######################################################################   
        
 def main():
     # Initialise screen
@@ -696,6 +689,12 @@ def main():
         chance = randint(0,70)
         if chance == 70:
             i = Leaf()
+            decosprites.add(i)
+            
+    def addFire():
+        chance = randint(0,60)
+        if chance == 60:
+            i = Fire()
             decosprites.add(i)
 
     # Initialize enemies
@@ -956,6 +955,8 @@ def main():
 
         if intro == False:
             addLeaf()
+        else:
+            addFire()
 
         # Update stuffs
         theverybackgroundsprites.update()
@@ -993,7 +994,8 @@ def main():
         
         enemyuppersprites.draw(screen)
 
-        playersprites.draw(screen)
+        if veil_layer.fading == None:
+            playersprites.draw(screen)
         
         swordsprites.draw(screen)
 
@@ -1004,6 +1006,9 @@ def main():
         foregroundsprites.draw(screen)
    
         veilsprites.draw(screen)
+        
+        if veil_layer.fading != None:
+            playersprites.draw(screen)
         
         
         pygame.display.flip()
