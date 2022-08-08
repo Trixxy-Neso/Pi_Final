@@ -54,6 +54,7 @@ class Player(pygame.sprite.Sprite):
         self.invuln_cooldown = False
         self.dashAbility = True
         self.frame_switch = 1
+        self.reinit()
         print("reseting player")
         self.image = pygame.image.load("ffront.png")
 
@@ -63,7 +64,7 @@ class Player(pygame.sprite.Sprite):
             self.rect = newpos
         pygame.event.pump()
 
-        hit_player = pygame.sprite.spritecollide(self, Enemygroup, False)
+        hit_player = pygame.sprite.spritecollide(self, EnemyUppergroup, False)
         if hit_player:
             self.player_hit()
 
@@ -320,29 +321,26 @@ class Effect(pygame.sprite.Sprite):
         self.rect.x = pcx - 13
         self.rect.y = pcy - 5
 
+##### IMPORTANT #####
+# This is the only way to get the enemy/palyer behind-infront illusion to work as you can't render entities in the same group at diffrent layers.
+# There are 2 classes of enemy so that enemies in the back render as behind and vise versa.
+# There are 2 render groups, one where sprites are only visible above the player and one where sprites are only visible below.
+# The 2 sprites are spawned on top of eachother and vanish/reappear in sync with eachother so it appears as one.
+# The movement code is the same for both so they *should* stay in sync with eachother.
+# This is a terrible and inneficient way of doing it but I think its the only way.
 
-
-class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
+class UpperEnemy(pygame.sprite.Sprite):
+    def __init__(self,x,y):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("breadc.png")
+        #self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD)
         self.rect = self.image.get_rect()
         self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
-
-        #random spawn locations
-        tryspawn = True
-        while tryspawn:
-            self.rect.x = randint(10, 750)
-            self.rect.y = randint(10, 450)
-            dx = (player1.rect.x + (player1.rect.width/2) ) - (self.rect.x + (self.rect.width/2))
-            dy = (player1.rect.y + (player1.rect.height/2)) - (self.rect.y + (self.rect.height/2))
-            dist = math.hypot(dx, dy)
-            if dist < 200:
-                tryspawn = True
-            else: 
-                tryspawn = False
+        self.rect.x = x
+        self.rect.y = y
+        
         self.speed = 2
         
     def update(self, player): # has the enemy move with/to player
@@ -353,6 +351,47 @@ class Enemy(pygame.sprite.Sprite):
             dx, dy = dx / dist, dy / dist
             self.rect.x += dx * self.speed
             self.rect.y += dy * self.speed
+
+        # Change visibility to render behind or infront
+        if self.rect.y <= player.rect.y:
+            self.image.set_alpha(255)
+        else:
+            self.image.set_alpha(0)
+
+        # this handeles sword colision dectection, player colision is handeled in the player class
+        hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
+        if hit_sword:
+            self.kill()
+            print("OH GOD IM DEAD")
+
+class LowerEnemy(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("breadc.png")
+        #self.image.fill((0, 0, 190, 100), special_flags=pygame.BLEND_ADD)
+        self.rect = self.image.get_rect()
+        self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        
+        self.speed = 2
+        
+    def update(self, player): # has the enemy move with/to player
+        dx = (player.rect.x + (player.rect.width/2) ) - (self.rect.x + (self.rect.width/2))
+        dy = (player.rect.y + (player.rect.height/2)) - (self.rect.y + (self.rect.height/2))
+        dist = math.hypot(dx, dy)
+        if dist > 40:
+            dx, dy = dx / dist, dy / dist
+            self.rect.x += dx * self.speed
+            self.rect.y += dy * self.speed
+        
+        # Change visibility to render behind or infront
+        if self.rect.y >= player.rect.y:
+            self.image.set_alpha(255)
+        else:
+            self.image.set_alpha(0)
 
         # this handeles sword colision dectection, player colision is handeled in the player class
         hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
@@ -492,21 +531,38 @@ def main():
 
 
     # Initialize enemies
-    global Enemygroup
-    Enemygroup = pygame.sprite.Group()
+    global EnemyUppergroup
+    EnemyUppergroup = pygame.sprite.Group()
+    global EnemyLowergroup
+    EnemyLowergroup = pygame.sprite.Group()
     def addEnemies(stage):
         thic_num = int(stage / 2)
         for i in range(0, stage):
-            i = Enemy()
-            Enemygroup.add(i)           
-            enemysprites.add(i)
+            tryspawn = True
+            while tryspawn:
+                x = randint(10, 750)
+                y = randint(10, 450)
+                dx = (player1.rect.x + (player1.rect.width/2) ) - (x + (player1.rect.width/2))
+                dy = (player1.rect.y + (player1.rect.height/2)) - (y + (player1.rect.height/2))
+                dist = math.hypot(dx, dy)
+                if dist < 200:
+                    tryspawn = True
+                else: 
+                    tryspawn = False
+            i = UpperEnemy(x,y)
+            j = LowerEnemy(x,y)
+            EnemyUppergroup.add(i)
+            EnemyLowergroup.add(j)             
+            enemyuppersprites.add(i)
+            enemylowersprites.add(j)
         
     
 
     # Initialise sprites
     playersprites = pygame.sprite.RenderPlain((player1))
     playereffectsprites = pygame.sprite.RenderPlain((effect))
-    enemysprites = pygame.sprite.RenderPlain()   
+    enemyuppersprites = pygame.sprite.RenderPlain() 
+    enemylowersprites = pygame.sprite.RenderPlain()    
     backgroundsprites = pygame.sprite.RenderPlain((health, notice, wave_counter))
     swordsprites = pygame.sprite.RenderPlain((sword))
     theverybackgroundsprites = pygame.sprite.RenderPlain((bgimage))
@@ -569,7 +625,7 @@ def main():
             notice.show()
             show_notice = True
 
-        if len(enemysprites) == 0:
+        if len(enemyuppersprites) == 0:
             wave_fin = True
             notice.nextWave()
             #notice.hide()
@@ -719,7 +775,8 @@ def main():
         # Update stuffs
         theverybackgroundsprites.update()
         if game_over == False:
-            enemysprites.update(player1)
+            enemyuppersprites.update(player1)
+            enemylowersprites.update(player1)
         playereffectsprites.update(player1)
         playersprites.update()
         backgroundsprites.update()
@@ -729,8 +786,13 @@ def main():
 
         # Render Stuffs 
 
-        for enemy in enemysprites:
+        for enemy in enemyuppersprites:
             screen.blit(background, enemy.rect)
+
+        for enemy in enemylowersprites:
+            screen.blit(background, enemy.rect)
+
+        
             
         screen.blit(background, player1.rect)
         screen.blit(background, health.rect)
@@ -739,11 +801,13 @@ def main():
         
         theverybackgroundsprites.draw(screen)
        
-        #enemysprites.draw(screen)
-     
         playereffectsprites.draw(screen)
+        
+        enemyuppersprites.draw(screen)
 
         playersprites.draw(screen)
+
+        enemylowersprites.draw(screen)
 
         backgroundsprites.draw(screen)
    
