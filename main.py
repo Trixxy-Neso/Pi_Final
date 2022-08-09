@@ -210,7 +210,7 @@ class Player(pygame.sprite.Sprite):
                 self.movepos[0] = 0
                 self.movepos[1] = 0
                 health.dead()
-                effect.player_death()
+                #effect.player_death()
                 global game_over 
                 game_over = True
                 pygame.display.update()
@@ -350,8 +350,8 @@ class Effect(pygame.sprite.Sprite):
     def dash(self):
         self.image = pygame.image.load("dash.png")
 
-    def player_death(self):
-        self.kill()
+    #def player_death(self):
+    #   self.kill()
         
     def update(self, player): # has the enemy move with/to player
         pcx = player.rect.x #- (player.rect.width / 2)
@@ -730,6 +730,11 @@ class Purse(pygame.sprite.Sprite):
     def hide(self):
         self.rect.x = -100
         self.rect.y = -300
+        
+    def reset(self):
+        self.coins = 0
+        print("resetting coins")
+        self.image = self.font.render(f'${self.coins}', True, (0,0,0))
 
  
        
@@ -898,11 +903,15 @@ def main():
         #notice.restart()
         player1.reset()
         health.reset()
+        purse_image.reset()
         for enemy in EnemyUppergroup:
             enemy.kill()
 
         for enemy in EnemyLowergroup:
             enemy.kill()
+            
+        for coin in coinsprites:
+            coin.kill()
         
         
     health.hide()
