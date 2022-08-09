@@ -37,6 +37,8 @@ class Player(pygame.sprite.Sprite):
         self.invuln_cooldown = False
         self.dashAbility = True
         self.frame_switch = 1
+        self.wakeup_status = False
+        self.return_start = False
         print("creating player")
 
     def reinit(self):
@@ -46,8 +48,8 @@ class Player(pygame.sprite.Sprite):
         #self.rect.midleft = self.area.midleft
 
     def reset(self):
-        self.rect.x = 280
-        self.rect.y = 130
+        #self.rect.x = 280
+        #self.rect.y = 130
         self.state = "still"
         self.attack_frame = 0
         self.health = 5
@@ -58,7 +60,8 @@ class Player(pygame.sprite.Sprite):
         self.frame_switch = 1
         self.reinit()
         print("reseting player")
-        self.image = pygame.image.load("ffront.png")
+        #self.image = pygame.image.load("ffront.png")
+        
 
     def update(self):
         newpos = self.rect.move(self.movepos)
@@ -70,7 +73,7 @@ class Player(pygame.sprite.Sprite):
         if hit_player:
             self.player_hit()
 
-        if self.movepos[0] == 0 and self.movepos[1] == 0:
+        if self.movepos[0] == 0 and self.movepos[1] == 0 and self.health > 0:
             
             if self.state == "stopup":
                 self.image = pygame.image.load("fback.png")
@@ -108,11 +111,50 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.image = pygame.image.load("left2.png")
 
+        if self.wakeup_status == True:
+            if self.frame_switch == 1:
+                self.image = pygame.image.load("ffront.png")
+            else:
+                self.image = pygame.image.load("dead.png")
+        
         if self.cooldown == True:
             self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD)
 
         if self.invuln_cooldown == True:
             self.image.fill((60, 0, 0, 100), special_flags=pygame.BLEND_SUB)
+            
+        if self.return_start == True and game_over == True and self.wakeup_status == False:    
+            revivespeed = 1
+            dx = (300) - (self.rect.x + (self.rect.width/2))
+            dy = (170) - (self.rect.y + (self.rect.height/2))
+            dist = math.hypot(dx, dy)
+            #print(f"Dist is :{dist}")
+            #print(f"dy is :{dy}")
+            if dx > 6 or dx < -6:
+                #dx = dx / dist
+                if dx > 0:
+                    self.movepos[0] = 3
+                if dx < 0:
+                    self.movepos[0] = -3   
+            else:
+                self.movepos[0] = 0
+                    
+            if dy > 6 or dy < -6:
+                #dy = dy / dist
+                if dy > 0:
+                    self.movepos[1] = 3
+                if dy < 0:
+                    self.movepos[1] = -3
+            else:
+                self.movepos[1] = 0
+                    
+            if dist < 10:
+                self.return_start = False
+                self.movepos[0] = 0
+                self.movepos[1] = 0
+                
+                    
+                
         
         
     def frameUpdate(self):
@@ -121,7 +163,13 @@ class Player(pygame.sprite.Sprite):
         else:
             self.frame_switch = 1
         pygame.time.set_timer(frame_cooldown, 100)
-
+        
+    def wakeup(self, status):
+        if status == "start":
+            self.wakeup_status = True
+            pygame.time.set_timer(wakeup_blink, 1000)
+        else:
+            self.wakeup_status = False
             
 
     def moveup(self):
@@ -168,9 +216,10 @@ class Player(pygame.sprite.Sprite):
              
             if self.health <= 0:
                 health.image = pygame.image.load("nohealth.png")
-                #self.kill()
-                self.rect.x = -100
-                self.rect.y = -300
+                self.image = pygame.image.load("dead.png")
+                self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD) # Red tint
+                self.movepos[0] = 0
+                self.movepos[1] = 0
                 health.dead()
                 effect.player_death()
                 global game_over 
@@ -461,7 +510,7 @@ class NoticeBoard(pygame.sprite.Sprite):
 
     def restart(self):
         self.font = pygame.font.Font("font.ttf", 25)
-        self.image = self.font.render("PRESS 'ENTER' TO RESTART", True, (0,0,0))
+        self.image = self.font.render("PRESS 'ENTER' TO RESTART OR 'BACKSPACE' TO QUIT", True, (0,0,0))
         self.rect = self.image.get_rect()
         #print("set to restart")
         self.rect.center = self.area.center #- (self.rect.width/2)
@@ -734,6 +783,8 @@ def main():
     invuln_cooldown = pygame.USEREVENT + 4
     global frame_cooldown 
     frame_cooldown = pygame.USEREVENT + 5
+    global wakeup_blink
+    wakeup_blink = pygame.USEREVENT + 6
     global game_over
     game_over = True
     global testing
@@ -798,7 +849,7 @@ def main():
         
 
         for event in pygame.event.get():
-            if event.type == hit_cooldown:
+            if event.type == hit_cooldown and player1.health > 0:
                 player1.cooldown = False
                 player1.image = pygame.image.load("ffront.png") # reset red tint
             if event.type == dash_cooldown:
@@ -810,24 +861,31 @@ def main():
                 player1.invuln_cooldown = False
             if event.type == frame_cooldown:
                 player1.frameUpdate()
+            if event.type == wakeup_blink:
+                player1.wakeup("end")
             if event.type == KEYDOWN and event.key == K_ESCAPE:
                 return
             if event.type == QUIT:
                 return
             if event.type == KEYDOWN and game_over == True:
                 if event.key == K_RETURN:
+                    if not player1.health > 0:
+                        player1.wakeup("start")
                     restart()
                     print("restarting")
                     #intro = False
-                    if intro:
+                    if veil_layer.location == "Title":
                         veil_layer.next("Feild")
+                    
                     #health.show()
                     #wave_counter.show()
                 if event.key == K_BACKSPACE and intro == False:
+                    if not player1.health > 0:
+                        player1.wakeup("start")
                     veil_layer.next("Title")
                     restart()
                     print("moving to title")
-                    
+                    player1.return_start = True
                     intro = True
                     
             # Get key positions to be used later
