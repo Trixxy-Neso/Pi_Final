@@ -36,7 +36,6 @@ class Player(pygame.sprite.Sprite):
         self.frame_switch = 1
         self.wakeup_status = False
         self.return_start = False
-        print("creating player")
 
     def reinit(self):
         self.state = "stopdown"
@@ -56,7 +55,6 @@ class Player(pygame.sprite.Sprite):
         self.dashAbility = True
         self.frame_switch = 1
         self.reinit()
-        print("reseting player")
         #self.image = pygame.image.load("ffront.png")   
 
     def update(self):
@@ -736,7 +734,40 @@ class Purse(pygame.sprite.Sprite):
         print("resetting coins")
         self.image = self.font.render(f'${self.coins}', True, (0,0,0))
 
- 
+##### BUYABLE CLASS #####
+## Like the enemy class, the buyable is split into 2 and is rendered as an enemy to get around the rendering issue.
+# Shorter dash cooldown
+# Longer sword
+# Shield - damage that resets each round
+# Dodge chance
+# Heal 
+
+class UpperBuyable(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("breadc.png")
+        #self.image.fill((190, 0, 0, 100), special_flags=pygame.BLEND_ADD)
+        self.rect = self.image.get_rect()
+        self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        
+    def update(self, player): # has the enemy move with/to player
+        # Change visibility to render behind or infront
+        #if self.rect.y <= player.rect.y:
+        #    self.image.set_alpha(255)
+        #else:
+        #    self.image.set_alpha(0)
+
+        # this handeles sword colision dectection, player colision is handeled in the player class
+        hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
+        if hit_sword:
+            self.kill()
+            #print("OH GOD IM DEAD")
+            self.addCoin()
+                     
        
 ######################################################################
 #                             MAIN                                   #
@@ -889,7 +920,6 @@ def main():
     ignoreY = 0
 
     def restart():
-        print("got here")
         global wave_fin
         wave_fin = True
         global wave_num
@@ -979,8 +1009,6 @@ def main():
                 if event.key == K_d:
                     #player1.moveright()
                     ignoreX += 1
-                    print("keydown right")
-                    print(ignoreX)
                     
             if event.type == KEYUP and game_over == False and veil_layer.fading != None:  
                 if event.key == K_w:
@@ -1092,8 +1120,6 @@ def main():
                     
                 if event.key == K_d and ignoreX == 0:
                     player1.stopmoveright()
-                    print(ignoreX)
-                    print("upping right")
 
                 if event.key == K_w and ignoreY == 0: 
                     player1.stopmoveup()
@@ -1182,6 +1208,8 @@ def main():
         
         theverybackgroundsprites.draw(screen)
        
+        coinsprites.draw(screen)
+       
         playereffectsprites.draw(screen)
         
         enemyuppersprites.draw(screen)
@@ -1193,8 +1221,6 @@ def main():
 
         enemylowersprites.draw(screen)
         
-        coinsprites.draw(screen)
-
         decosprites.draw(screen)
  
         foregroundsprites.draw(screen)
