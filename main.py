@@ -126,18 +126,18 @@ class Player(pygame.sprite.Sprite):
             if dx > 6 or dx < -6:
                 #dx = dx / dist
                 if dx > 0:
-                    self.movepos[0] = 3
+                    self.movepos[0] = 2
                 if dx < 0:
-                    self.movepos[0] = -3   
+                    self.movepos[0] = -2   
             else:
                 self.movepos[0] = 0
                     
             if dy > 6 or dy < -6:
                 #dy = dy / dist
                 if dy > 0:
-                    self.movepos[1] = 3
+                    self.movepos[1] = 2
                 if dy < 0:
-                    self.movepos[1] = -3
+                    self.movepos[1] = -2
             else:
                 self.movepos[1] = 0
                     
@@ -208,11 +208,19 @@ class Player(pygame.sprite.Sprite):
                 self.movepos[0] = 0
                 self.movepos[1] = 0
                 health.dead()
+                for _ in range(0,purse_image.coins):
+                    self.addCoin()
                 #effect.player_death()
                 global game_over 
                 game_over = True
                 pygame.display.update()
                 
+    def addCoin(self):
+        print("Death Coins")
+        i = Coin(self.rect.x, self.rect.y)
+        #global coinsprites
+        coinsprites.add(i)
+            
     def dash(self, direction):
         print("start dash")
         if self.d_cooldown == False:
@@ -686,23 +694,51 @@ class Coin(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x + 30
         self.rect.y = y + 60
+        self.floatPosX = float(self.rect.x)
+        self.floatPosY = float(self.rect.y)
         self.startingy = self.rect.y
-        self.xVelocity = randint(-3,3)
-        self.yVelocity = randint(10,15)
+        self.xVelocity = float(randint(-30,30)/10)
+        self.yVelocity = float(randint(100,150)/10)
+        print(f"making coin at X velocity: {self.xVelocity}")
+        print(f"making coin at Y velocity: {self.yVelocity}")
         self.moveSpeedX = 0
         self.moveSpeedY = 1
+        self.frame_switch = 0
+        self.flying = False
+        pygame.time.set_timer(coin_flip, 50)
+        
+    def frameUpdate(self):
+        if self.flying:        
+            if self.frame_switch == 1:
+                self.frame_switch = 2
+                self.image = pygame.image.load("coin.png")
+                print("coin being told to flip")
+                pygame.time.set_timer(coin_flip, 50)
+            else:
+                self.frame_switch = 1
+                self.image = pygame.image.load("coin2.png")
+                print("coin being told to flip")
+                pygame.time.set_timer(coin_flip, 50)
+        else:
+            self.image = pygame.image.load("coin.png")
 
     def update(self):
         currenty = self.rect.y
         #yDist = self.startingy - currenty
         if currenty <= self.startingy:
-            self.rect.y -= self.yVelocity
-            self.rect.x += self.xVelocity
+            self.floatPosY -= self.yVelocity
+            self.floatPosX += self.xVelocity
+            self.rect.y = int(self.floatPosY)
+            self.rect.x = int(self.floatPosX)
             self.yVelocity -= 1
+            self.flying = True
+        else:
+            self. flying = False
             
-        if pygame.sprite.spritecollide(self, Playergroup, False):
+        if pygame.sprite.spritecollide(self, Playergroup, False) and player1.health >= 1:
             purse_image.tick()
             self.kill()
+            
             
 ##### PURSE CLASS #####
             
@@ -903,6 +939,8 @@ def main():
     frame_cooldown = pygame.USEREVENT + 5
     global wakeup_blink
     wakeup_blink = pygame.USEREVENT + 6
+    global coin_flip
+    coin_flip = pygame.USEREVENT + 7
     global game_over
     game_over = True
     global testing
@@ -990,6 +1028,9 @@ def main():
                 player1.frameUpdate()
             if event.type == wakeup_blink:
                 player1.wakeup("end")
+            if event.type == coin_flip:
+                for coin in coinsprites:    
+                    coin.frameUpdate()
             if event.type == KEYDOWN and event.key == K_ESCAPE:
                 return
             if event.type == QUIT:
@@ -1089,6 +1130,9 @@ def main():
                 if event.key == K_l and testing:
                     player1.health = 1
                     player1.player_hit()
+                if event.key == K_p and testing:
+                    i = Coin(200,200)
+                    coinsprites.add(i)
 
                 # Waves
                 if event.key == K_RETURN and wave_fin and veil_layer.location == "Feild":
