@@ -391,15 +391,12 @@ class UpperEnemy(pygame.sprite.Sprite):
         global coinsprites
         
     def addCoin(self):
-        print("Trying coin")
         chance = randint(0,5)
         if chance == 1:
-            print("Adding coin")
             i = Coin(self.rect.x, self.rect.y)
             #global coinsprites
             coinsprites.add(i)
         if chance == 0:
-            print("Adding 2 coins")
             i = Coin(self.rect.x, self.rect.y)
             j = Coin(self.rect.x, self.rect.y)
             #global coinsprites
@@ -591,15 +588,19 @@ class Veil(pygame.sprite.Sprite):
                     notice.title()
                     global game_over
                     game_over = True
+                    clearScreen()
                 elif self.destination == "Feild":
                     bgimage.image = pygame.image.load("background.png")
                     bgimage.rect.x = 0
                     bgimage.rect.y = 0
+                    takedownShop()
                 elif self.destination == "Store":
                     bgimage.image = pygame.image.load("store.png")
                     bgimage.rect.x = 0
                     bgimage.rect.y = 0
                     notice.hide()
+                    setupShop()
+                    
                 if self.destination != "Title":
                     health.show()
                     wave_counter.show()
@@ -692,6 +693,7 @@ class Coin(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.image.load("coin.png")
         self.rect = self.image.get_rect()
+        # Hold coin pos as floats with decimal precision so it looks more natural
         self.rect.x = x + 30
         self.rect.y = y + 60
         self.floatPosX = float(self.rect.x)
@@ -699,8 +701,6 @@ class Coin(pygame.sprite.Sprite):
         self.startingy = self.rect.y
         self.xVelocity = float(randint(-30,30)/10)
         self.yVelocity = float(randint(100,150)/10)
-        print(f"making coin at X velocity: {self.xVelocity}")
-        print(f"making coin at Y velocity: {self.yVelocity}")
         self.moveSpeedX = 0
         self.moveSpeedY = 1
         self.frame_switch = 0
@@ -712,12 +712,10 @@ class Coin(pygame.sprite.Sprite):
             if self.frame_switch == 1:
                 self.frame_switch = 2
                 self.image = pygame.image.load("coin.png")
-                print("coin being told to flip")
                 pygame.time.set_timer(coin_flip, 50)
             else:
                 self.frame_switch = 1
                 self.image = pygame.image.load("coin2.png")
-                print("coin being told to flip")
                 pygame.time.set_timer(coin_flip, 50)
         else:
             self.image = pygame.image.load("coin.png")
@@ -728,6 +726,7 @@ class Coin(pygame.sprite.Sprite):
         if currenty <= self.startingy:
             self.floatPosY -= self.yVelocity
             self.floatPosX += self.xVelocity
+            # Turn float pos into actual pos without disturbing float pos, keeping decimal precision
             self.rect.y = int(self.floatPosY)
             self.rect.x = int(self.floatPosX)
             self.yVelocity -= 1
@@ -767,7 +766,6 @@ class Purse(pygame.sprite.Sprite):
         
     def reset(self):
         self.coins = 0
-        print("resetting coins")
         self.image = self.font.render(f'${self.coins}', True, (0,0,0))
 
 ##### BUYABLE CLASS #####
@@ -792,19 +790,71 @@ class UpperBuyable(pygame.sprite.Sprite):
         
     def update(self, player): # has the enemy move with/to player
         # Change visibility to render behind or infront
-        #if self.rect.y <= player.rect.y:
-        #    self.image.set_alpha(255)
-        #else:
-        #    self.image.set_alpha(0)
+        if self.rect.y <= player.rect.y:
+            self.image.set_alpha(255)
+        else:
+            self.image.set_alpha(0)
 
         # this handeles sword colision dectection, player colision is handeled in the player class
         hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
         if hit_sword:
-            self.kill()
-            #print("OH GOD IM DEAD")
-            self.addCoin()
-                     
-       
+            #self.kill()
+            print("OH GOD IM BOUGHT")
+            
+    def clear(self):
+        self.kill()
+            
+class LowerBuyable(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load("breadc.png")
+        #self.image.fill((0, 0, 190, 100), special_flags=pygame.BLEND_ADD)
+        self.rect = self.image.get_rect()
+        self.rect.update(self.rect.x, self.rect.y + 10, self.rect.width, self.rect.height - 10)
+        screen = pygame.display.get_surface()
+        self.area = screen.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        
+    def update(self, player): # has the enemy move with/to player
+        # Change visibility to render behind or infront
+        if self.rect.y >= player.rect.y:
+            self.image.set_alpha(255)
+        else:
+            self.image.set_alpha(0)
+            
+    def clear(self):
+        self.kill()
+
+def setupShop():
+    xPos = 200
+    yPos = 200
+    
+    for i in range(0,2):
+        i = UpperBuyable(xPos,yPos)
+        j = LowerBuyable(xPos,yPos)
+        ShopUppergroup.add(i)
+        ShopLowergroup.add(j)
+        shopuppersprites.add(i)
+        shoplowersprites.add(j)
+        xPos += 100
+        
+def takedownShop():
+    for buyable in ShopUppergroup:
+        buyable.kill()
+    
+    for buyable in ShopLowergroup:
+        buyable.kill()
+        
+def clearScreen():
+    for enemy in EnemyUppergroup:
+            enemy.kill()
+
+    for enemy in EnemyLowergroup:
+        enemy.kill()
+        
+    for coin in coinsprites:
+        coin.kill()
 ######################################################################
 #                             MAIN                                   #
 ######################################################################   
@@ -874,7 +924,11 @@ def main():
             i = Fire()
             decosprites.add(i)
             
-    
+    # Initialize shop sprites
+    global ShopUppergroup
+    ShopUppergroup = pygame.sprite.Group()
+    global ShopLowergroup
+    ShopLowergroup = pygame.sprite.Group()
 
     # Initialize enemies
     global EnemyUppergroup
@@ -907,8 +961,14 @@ def main():
     # Initialise sprites
     playersprites = pygame.sprite.RenderPlain((player1))
     playereffectsprites = pygame.sprite.RenderPlain((effect))
+    global enemyuppersprites
     enemyuppersprites = pygame.sprite.RenderPlain() 
-    enemylowersprites = pygame.sprite.RenderPlain()    
+    global enemylowersprites
+    enemylowersprites = pygame.sprite.RenderPlain()
+    global shopuppersprites
+    shopuppersprites = pygame.sprite.RenderPlain()
+    global shoplowersprites
+    shoplowersprites = pygame.sprite.RenderPlain()    
     foregroundsprites = pygame.sprite.RenderPlain((health, notice, wave_counter, purse_image))
     swordsprites = pygame.sprite.RenderPlain((sword))
     theverybackgroundsprites = pygame.sprite.RenderPlain((bgimage))
@@ -972,6 +1032,7 @@ def main():
         player1.reset()
         health.reset()
         purse_image.reset()
+        '''
         for enemy in EnemyUppergroup:
             enemy.kill()
 
@@ -981,7 +1042,7 @@ def main():
         for coin in coinsprites:
             coin.kill()
         
-        
+        '''
     health.hide()
     wave_counter.hide()
     purse_image.hide()
@@ -1077,6 +1138,8 @@ def main():
                     if veil_layer.location == "Title":
                         #notice.hide()
                         veil_layer.next("Feild")
+                    else:
+                        clearScreen()
                     
                 if event.key == K_BACKSPACE and intro == False:
                     if not player1.health > 0:
@@ -1218,9 +1281,11 @@ def main():
 
         # Update stuffs
         theverybackgroundsprites.update()
-        if game_over == False:
+        if game_over == False and veil_layer.fading == None:
             enemyuppersprites.update(player1)
             enemylowersprites.update(player1)
+        shopuppersprites.update(player1)
+        shoplowersprites.update(player1)
         playereffectsprites.update(player1)
         playersprites.update()
         foregroundsprites.update()
@@ -1237,6 +1302,12 @@ def main():
 
         for enemy in enemylowersprites:
             screen.blit(background, enemy.rect)
+            
+        for buyable in shopuppersprites:
+            screen.blit(background, buyable.rect)
+            
+        for buyable in shoplowersprites:
+            screen.blit(background, buyable.rect)
             
         for leaf in decosprites:
             screen.blit(background, leaf.rect)
@@ -1257,6 +1328,8 @@ def main():
         playereffectsprites.draw(screen)
         
         enemyuppersprites.draw(screen)
+        
+        shopuppersprites.draw(screen)
 
         if veil_layer.fading == None:
             playersprites.draw(screen)
@@ -1264,6 +1337,8 @@ def main():
         swordsprites.draw(screen)
 
         enemylowersprites.draw(screen)
+        
+        shoplowersprites.draw(screen)
         
         decosprites.draw(screen)
  
