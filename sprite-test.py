@@ -326,7 +326,7 @@ def main():
 
 
     # Fill background
-    backgroundSurface = pygame.image.load("backgorund.png")#pygame.Surface(screen.get_size())
+    backgroundSurface = pygame.image.load("background.png")#pygame.Surface(screen.get_size())
     #backgroundSurface = backgroundSurface.convert()
     #backgroundSurface.fill((0, 128, 0))
 

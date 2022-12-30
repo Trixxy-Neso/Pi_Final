@@ -787,6 +787,7 @@ class UpperBuyable(pygame.sprite.Sprite):
         self.area = screen.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.bought = False
         
     def update(self, player): # has the enemy move with/to player
         # Change visibility to render behind or infront
@@ -797,8 +798,10 @@ class UpperBuyable(pygame.sprite.Sprite):
 
         # this handeles sword colision dectection, player colision is handeled in the player class
         hit_sword = pygame.sprite.spritecollide(self, Swordgroup, False)
-        if hit_sword:
+        if hit_sword and self.bought == False and purse_image.coins >= 5:
             #self.kill()
+            purse_image.coins -= 5
+            self.bought = True
             print("OH GOD IM BOUGHT")
             
     def clear(self):
