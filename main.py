@@ -806,7 +806,9 @@ class UpperBuyable(pygame.sprite.Sprite):
             
     def clear(self):
         self.kill()
-            
+    
+    # This line is to test if I broke git
+
 class LowerBuyable(pygame.sprite.Sprite):
     def __init__(self,x,y):
         pygame.sprite.Sprite.__init__(self)
